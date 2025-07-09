@@ -1,6 +1,6 @@
 // Updated ChatScreen.tsx
 import React, { useEffect, useState } from "react";
-import { sendMessage, fetchMessages } from "@utils/utils";
+import { sendMessage, fetchMessages, formatDate } from "@utils/utils";
 import { useParams } from "next/navigation";
 import { styled } from "@mui/material/styles";
 import { TextField, Button, InputAdornment } from "@mui/material";
@@ -77,9 +77,12 @@ function ChatScreen() {
       <MessageList>
         {messages.map((msg) => (
           <Message key={msg.id} isCurrentUser={msg.sender === user?.email}>
-            <MessageText isCurrentUser={msg.sender === user?.email}>
-              {msg.text}
-            </MessageText>
+            <MessageBubble isCurrentUser={msg.sender === user?.email}>
+              <MessageTimestamp>{formatDate(msg.timestamp)}</MessageTimestamp>
+              <MessageText isCurrentUser={msg.sender === user?.email}>
+                {msg.text}
+              </MessageText>
+            </MessageBubble>
           </Message>
         ))}
       </MessageList>
@@ -90,16 +93,19 @@ function ChatScreen() {
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
           fullWidth
+          multiline
           onKeyDown={handleKeyDown}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <EmojiEmotionsIcon
-                  onClick={() => setShowEmojiPicker((prev) => !prev)}
-                  style={{ cursor: "pointer" }}
-                />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <EmojiEmotionsIcon
+                    onClick={() => setShowEmojiPicker((prev) => !prev)}
+                    style={{ cursor: "pointer" }}
+                  />
+                </InputAdornment>
+              ),
+            },
           }}
         />
         <Button onClick={handleSendMessage} variant="contained">
@@ -142,7 +148,7 @@ const MessageList = styled("div")`
     display: none; /* For Chrome, Safari, and Opera */
   }
   scrollbar-width: none; /* For Firefox */
-  padding: 20px;
+  padding: 20px 30px;
 `;
 
 const Message = styled("div")<{ isCurrentUser: boolean }>`
@@ -154,8 +160,24 @@ const Message = styled("div")<{ isCurrentUser: boolean }>`
   margin: 10px 0; // Add margin between messages
 `;
 
-const MessageText = styled("div")<{ isCurrentUser: boolean }>`
+const MessageBubble = styled("div")<{ isCurrentUser: boolean }>`
   max-width: 70%; // Limit the width of the message bubble
+  display: flex;
+  flex-direction: column;
+  align-items: ${(props) =>
+    props.isCurrentUser
+      ? "flex-end"
+      : "flex-start"}; // Align timestamp based on sender
+`;
+
+const MessageTimestamp = styled("div")`
+  font-size: 0.7em;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 400;
+`;
+
+const MessageText = styled("div")<{ isCurrentUser: boolean }>`
   padding: 10px; // Add padding inside the message bubble
   border-radius: 10px; // Round the corners of the message bubble
   background-color: ${(props) =>
