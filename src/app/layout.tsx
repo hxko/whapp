@@ -1,9 +1,10 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { Roboto } from "next/font/google";
+import { ThemeContextProvider } from "@components/ThemeContext";
 import CustomThemeProvider from "@components/ThemeProvider";
-import AuthProvider from "@/components/AuthProvider"; // We'll create this component
+import AuthProvider from "@/components/AuthProvider";
+import Footer from "@components/Footer";
 
 const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
@@ -12,8 +13,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Your App Name",
-  description: "Your app description",
+  title: "Whatsapp 2.0",
+  description: "Build with NextJS",
 };
 
 export default function RootLayout({
@@ -24,9 +25,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={roboto.className}>
-        <CustomThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </CustomThemeProvider>
+        <ThemeContextProvider>
+          <CustomThemeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </CustomThemeProvider>
+        </ThemeContextProvider>
       </body>
     </html>
   );

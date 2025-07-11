@@ -10,6 +10,7 @@ import ChatList from "@components/ChatList"; // Import the ChatList component
 import { signOut } from "firebase/auth"; // Import signOut function
 import useChats from "@hooks/useChats"; // Import custom hook
 import { useAuth } from "@/components/AuthProvider";
+import Footer from "@components/Footer";
 
 import {
   fetchUserData,
@@ -65,7 +66,8 @@ const Sidebar: React.FC = () => {
     }
 
     // Create a new chat in the database
-    await createChatInDB(email, user); // Pass the user object
+    const chatId = await createChatInDB(email, user);
+    router.push(`/chat/${chatId}`);
     console.log("Creating chat for email: ", email);
   };
 
@@ -104,8 +106,13 @@ const Sidebar: React.FC = () => {
         </IconsContainer>
       </Header>
       <SearchBar input={searchQuery} onSearch={setSearchQuery} />
-      <SidebarButton onClick={createChat}>Start a new chat</SidebarButton>
-      <ChatList chats={filteredChats} />
+      <SidebarButton onClick={createChat} variant="contained">
+        Start a new chat
+      </SidebarButton>
+      <ChatListContainer>
+        <ChatList chats={filteredChats} />
+      </ChatListContainer>
+      <Footer />
     </Container>
   );
 };
@@ -113,33 +120,43 @@ const Sidebar: React.FC = () => {
 export default Sidebar;
 
 // Styled components
-const Container = styled("div")``;
+const Container = styled("div")(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  backgroundColor: theme.palette.background.default, // Use theme background color
+  height: "100vh",
+}));
 
-const Header = styled("div")`
-  position: sticky;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 1;
-  padding: 15px;
-  height: 80px;
-  border-bottom: 1px solid whitesmoke;
-`;
+const Header = styled("div")(({ theme }) => ({
+  position: "sticky",
+  top: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  zIndex: 1,
+  padding: "15px",
+  height: "64px",
+  borderBottom: `1px solid ${theme.palette.divider}`, // Use theme divider color
+  backgroundColor: theme.palette.background.paper, // Use theme background color
+}));
 
-const UserAvatar = styled(Avatar)`
-  cursor: pointer;
-  :hover {
-    opacity: 0.8;
-  }
-`;
+const UserAvatar = styled(Avatar)(({ theme }) => ({
+  cursor: "pointer",
+  ":hover": {
+    opacity: 0.8,
+  },
+}));
 
 const IconsContainer = styled("div")``;
 
-const SidebarButton = styled(Button)`
-  width: 100%;
-  &&& {
-    border-top: 1px solid whitesmoke;
-    border-bottom: 1px solid whitesmoke;
-  }
-`;
+const SidebarButton = styled(Button)(({ theme }) => ({
+  width: "90%",
+  margin: "0 auto",
+  padding: "10px 20px", // Increase padding for a larger button
+  borderRadius: "8px", // Add border radius for rounded corners
+}));
+
+const ChatListContainer = styled("div")(({ theme }) => ({
+  flexGrow: 1, // Allow this container to grow and take available space
+  overflowY: "auto", // Enable scrolling if content overflows
+}));

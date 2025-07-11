@@ -17,19 +17,7 @@ import { Chat } from "../types/types"; // Import the Chat interface
 import { useAuthState } from "react-firebase-hooks/auth";
 import { User } from "firebase/auth"; // Import User type from Firebase
 import { Messagetype } from "types/types";
-import { More, AttachFile } from "@mui/icons-material";
 import { Timestamp } from "firebase/firestore"; // Import Firestore Timestamp
-
-export const formatDate = (date: Date | Timestamp): string => {
-  // Convert Firestore Timestamp to Date if necessary
-  const dateObj = date instanceof Timestamp ? date.toDate() : date;
-  const day = String(dateObj.getDate()).padStart(2, "0"); // Get day and pad with zero if needed
-  const month = String(dateObj.getMonth() + 1).padStart(2, "0"); // Get month (0-indexed) and pad
-  const year = dateObj.getFullYear(); // Get full year
-  const hours = String(dateObj.getHours()).padStart(2, "0"); // Get hours and pad
-  const minutes = String(dateObj.getMinutes()).padStart(2, "0"); // Get minutes and pad
-  return `${day}.${month}.${year} ${hours}:${minutes}`; // Return formatted date string
-};
 
 // Utility function to get chat by ID
 export const getChatById = async (chatId: string): Promise<Chat | null> => {
@@ -75,13 +63,14 @@ export const fetchUserData = async (email: string) => {
 export const createChatInDB = async (
   email: string,
   currentUser: User
-): Promise<void> => {
+): Promise<string | undefined> => {
   try {
-    const docRef = await addDoc(collection(db, "chats"), {
+    const chatRef = await addDoc(collection(db, "chats"), {
       users: [currentUser.email, email],
       createdAt: serverTimestamp(),
     });
-    console.log("Chat created with ID: ", docRef.id);
+
+    return chatRef.id; // return the new chat ID
   } catch (error) {
     console.error("Error creating chat: ", error);
   }
@@ -143,12 +132,11 @@ export const fetchMessages = (
     const messages: Messagetype[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      console.log("Retrieved message data:", data); // Log the retrieved data
       messages.push({
         id: doc.id,
         sender: data.sender, // Ensure this property exists
         text: data.text, // Ensure this property exists
-        timestamp: data.timestamp ? data.timestamp.toDate() : new Date(), // Use current date if null // Convert Firestore timestamp to Date
+        timestamp: data.timestamp || Timestamp.now(), // Use current date if null // Convert Firestore timestamp to Date
       });
     });
     setMessages(messages);

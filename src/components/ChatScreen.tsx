@@ -1,36 +1,54 @@
-// Updated ChatScreen.tsx
-import React, { useEffect, useState } from "react";
-import { sendMessage, fetchMessages, formatDate } from "@utils/utils";
+import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
+import { sendMessage, fetchMessages } from "@utils/utils";
 import { useParams } from "next/navigation";
-import { styled } from "@mui/material/styles";
-import { TextField, Button, InputAdornment } from "@mui/material";
+import { styled, useTheme } from "@mui/material/styles";
+import {
+  TextField,
+  Button,
+  InputAdornment,
+  Chip,
+  Box,
+  AppBar,
+  Toolbar,
+  Avatar,
+  Typography,
+} from "@mui/material";
 import { Messagetype } from "types/types";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import { useAuth } from "@/components/AuthProvider";
 import { useChatPartner } from "@/hooks/useChatPartner";
+import { useLastSeen } from "@/hooks/useLastSeen";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
-import ChatItem from "./ChatItem";
+import Message from "@components/Message";
+import { MoreVert, AttachFile } from "@mui/icons-material";
+import TimeAgo from "react-timeago"; // Import TimeAgo
+import OutlinedInput from "@mui/material/OutlinedInput";
 
 export type Params = {
   chatId?: string;
 };
 
 function ChatScreen() {
+  const theme = useTheme();
   const { user } = useAuth();
   const { chatId } = useParams<Params>();
   const [messages, setMessages] = useState<Messagetype[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const messageListRef = useRef<HTMLDivElement | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
 
-  // Use the single hook with chatId
   const {
-    chatPartner,
+    data: chatPartner,
     loading: partnerLoading,
     error: partnerError,
   } = useChatPartner(chatId);
 
-  useEffect(() => {
+  // Use the useLastSeen hook to get the last seen timestamp
+  const lastSeen = useLastSeen(chatPartner?.email);
+
+  useLayoutEffect(() => {
     if (chatId) {
       const unsubscribe = fetchMessages(chatId, setMessages);
       return () => unsubscribe();
@@ -39,6 +57,34 @@ function ChatScreen() {
     }
   }, [chatId]);
 
+  useLayoutEffect(() => {
+    const el = messageListRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   const handleSendMessage = async () => {
     if (newMessage.trim() && chatId) {
       const senderEmail = user?.email;
@@ -46,7 +92,7 @@ function ChatScreen() {
         await sendMessage(chatId, senderEmail, newMessage);
         setNewMessage("");
       } else {
-        console.error("User is not logged in or email is not available.");
+        console.error("User  is not logged in or email is not available.");
       }
     }
   };
@@ -60,34 +106,76 @@ function ChatScreen() {
 
   const handleEmojiSelect = (emoji: { native: string }) => {
     setNewMessage((prev) => prev + emoji.native);
-    setShowEmojiPicker(false);
   };
 
   if (partnerLoading) {
-    return <div>Loading chat partner...</div>;
+    return <Box>Loading chat partner...</Box>;
   }
 
   if (partnerError) {
-    return <div>Error loading chat partner: {partnerError}</div>;
+    return <Box>Error loading chat partner: {partnerError}</Box>;
   }
+
+  const groupMessagesByDate = (messages: Messagetype[]) => {
+    const groupedMessages: { [key: string]: Messagetype[] } = {};
+    const today = new Date();
+    messages.forEach((msg) => {
+      const messageDate = new Date(msg.timestamp.toDate());
+      const diffTime = Math.abs(today.getTime() - messageDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      let label;
+      if (diffDays < 7) {
+        label = messageDate.toLocaleDateString("en-US", { weekday: "long" });
+      } else {
+        label = messageDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+      if (!groupedMessages[label]) {
+        groupedMessages[label] = [];
+      }
+      groupedMessages[label].push(msg);
+    });
+    return groupedMessages;
+  };
+
+  const groupedMessages = groupMessagesByDate(messages);
 
   return (
     <Container>
-      <Header>{chatId && chatPartner && <ChatItem chatId={chatId} />}</Header>
-      <MessageList>
-        {messages.map((msg) => (
-          <Message key={msg.id} isCurrentUser={msg.sender === user?.email}>
-            <MessageBubble isCurrentUser={msg.sender === user?.email}>
-              <MessageTimestamp>{formatDate(msg.timestamp)}</MessageTimestamp>
-              <MessageText isCurrentUser={msg.sender === user?.email}>
-                {msg.text}
-              </MessageText>
-            </MessageBubble>
-          </Message>
+      <AppBar position="static">
+        <Toolbar>
+          <Avatar src={chatPartner?.photoURL} alt={chatPartner?.email} />
+          <Box sx={{ marginLeft: 2 }}>
+            <Typography variant="body1" fontWeight="bold">
+              {chatPartner?.email}
+            </Typography>
+            <Typography variant="body2" color={theme.palette.text.secondary}>
+              Last active:{" "}
+              {lastSeen ? <TimeAgo date={lastSeen.toDate()} /> : "Unknown"}
+            </Typography>
+          </Box>
+          <Box flexGrow={1} /> {/* This will push the icons to the right */}
+          <IconContainer>
+            <AttachFile style={{ cursor: "pointer", marginRight: 10 }} />
+            <MoreVert style={{ cursor: "pointer" }} />
+          </IconContainer>
+        </Toolbar>
+      </AppBar>
+      <MessageList ref={messageListRef}>
+        {Object.entries(groupedMessages).map(([label, msgs]) => (
+          <LabelContainer key={label}>
+            <StyledChip label={label} variant="filled" />
+            {msgs.map((msg) => (
+              <Message key={msg.id} message={msg} />
+            ))}
+          </LabelContainer>
         ))}
       </MessageList>
       <InputContainer>
-        <TextField
+        <OutlinedInput
           style={{ marginRight: 10 }}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
@@ -95,26 +183,26 @@ function ChatScreen() {
           fullWidth
           multiline
           onKeyDown={handleKeyDown}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <EmojiEmotionsIcon
-                    onClick={() => setShowEmojiPicker((prev) => !prev)}
-                    style={{ cursor: "pointer" }}
-                  />
-                </InputAdornment>
-              ),
-            },
-          }}
+          startAdornment={
+            <InputAdornment position="start">
+              <EmojiEmotionsIcon
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                style={{ cursor: "pointer" }}
+              />
+            </InputAdornment>
+          }
         />
-        <Button onClick={handleSendMessage} variant="contained">
+        <Button
+          onClick={handleSendMessage}
+          variant="contained"
+          color="primary" // Use primary color for the button
+        >
           Send
         </Button>
       </InputContainer>
 
       {showEmojiPicker && (
-        <EmojiPickerContainer>
+        <EmojiPickerContainer ref={emojiPickerRef}>
           <Picker data={data} onEmojiSelect={handleEmojiSelect} />
         </EmojiPickerContainer>
       )}
@@ -125,77 +213,62 @@ function ChatScreen() {
 export default ChatScreen;
 
 // Styled components for layout and styling
-const Header = styled("div")`
-  display: flex;
-  height: 80px;
-  align-items: center; // Center items vertically
-  padding: 15px; // Add padding around the header
-  border-bottom: 1px solid #e0e0e0; // Bottom border for separation
-  background: white;
-`;
+const Container = styled(Box)(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  height: "100%",
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? theme.palette.background.default
+      : theme.palette.grey[100], // Use theme background color for dark mode
+}));
 
-const Container = styled("div")`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: #f5f5f5; // Light background for the header
-`;
+const MessageList = styled(Box)(({ theme }) => ({
+  flex: 1,
+  height: "100%",
+  overflowY: "auto",
+  padding: "20px 30px",
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? theme.palette.background.paper
+      : theme.palette.grey[200], // Use theme background color for dark mode
+  "&::-webkit-scrollbar": {
+    display: "none", // For Chrome, Safari, and Opera
+  },
+  scrollbarWidth: "none", // For Firefox
+}));
 
-const MessageList = styled("div")`
-  flex: 1;
-  overflow-y: auto; // Allow vertical scrolling for the message list
-  :-webkit-scrollbar {
-    display: none; /* For Chrome, Safari, and Opera */
-  }
-  scrollbar-width: none; /* For Firefox */
-  padding: 20px 30px;
-`;
+const InputContainer = styled(Box)(({ theme }) => ({
+  display: "flex",
+  padding: theme.spacing(2),
+  background: theme.palette.background.paper, // Use theme background color
+}));
 
-const Message = styled("div")<{ isCurrentUser: boolean }>`
-  display: flex;
-  justify-content: ${(props) =>
-    props.isCurrentUser
-      ? "flex-end"
-      : "flex-start"}; // Align messages based on sender
-  margin: 10px 0; // Add margin between messages
-`;
+const EmojiPickerContainer = styled(Box)(({ theme }) => ({
+  position: "absolute",
+  bottom: "60px",
+  left: "10px",
+  zIndex: 1000,
+}));
 
-const MessageBubble = styled("div")<{ isCurrentUser: boolean }>`
-  max-width: 70%; // Limit the width of the message bubble
-  display: flex;
-  flex-direction: column;
-  align-items: ${(props) =>
-    props.isCurrentUser
-      ? "flex-end"
-      : "flex-start"}; // Align timestamp based on sender
-`;
+const LabelContainer = styled(Box)(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  margin: "10px 0",
+}));
 
-const MessageTimestamp = styled("div")`
-  font-size: 0.7em;
-  color: #666;
-  margin-bottom: 4px;
-  font-weight: 400;
-`;
+const IconContainer = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  marginLeft: "auto",
+}));
 
-const MessageText = styled("div")<{ isCurrentUser: boolean }>`
-  padding: 10px; // Add padding inside the message bubble
-  border-radius: 10px; // Round the corners of the message bubble
-  background-color: ${(props) =>
-    props.isCurrentUser
-      ? "#dcf8c6"
-      : "#ffffff"}; // Change background color based on sender
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); // Add a subtle shadow for depth
-`;
-
-const InputContainer = styled("div")`
-  display: flex;
-  padding: 10px; // Add padding around the input area
-  background: white;
-`;
-
-const EmojiPickerContainer = styled("div")`
-  position: absolute; // Position it absolutely to avoid layout shifts
-  bottom: 60px; // Adjust based on your layout
-  left: 10px; // Adjust based on your layout
-  z-index: 1000; // Ensure it appears above other elements
-`;
+const StyledChip = styled(Chip)(({ theme }) => ({
+  margin: "10px 0",
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? theme.palette.grey[800]
+      : theme.palette.grey[400], // Use theme primary color for dark mode
+  color: theme.palette.common.white, // Use theme common white color
+}));
