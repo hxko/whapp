@@ -12,6 +12,7 @@ import {
   Toolbar,
   Avatar,
   Typography,
+  IconButton, // Import IconButton
 } from "@mui/material";
 import { Messagetype } from "types/types";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
@@ -21,7 +22,8 @@ import { useLastSeen } from "@/hooks/useLastSeen";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import Message from "@components/Message";
-import { MoreVert, AttachFile } from "@mui/icons-material";
+import MoreVert from "@mui/icons-material/MoreVert"; // Import MoreVert icon
+import AttachFile from "@mui/icons-material/AttachFile"; // Import AttachFile icon
 import TimeAgo from "react-timeago"; // Import TimeAgo
 import OutlinedInput from "@mui/material/OutlinedInput";
 
@@ -159,8 +161,12 @@ function ChatScreen() {
           </Box>
           <Box flexGrow={1} /> {/* This will push the icons to the right */}
           <IconContainer>
-            <AttachFile style={{ cursor: "pointer", marginRight: 10 }} />
-            <MoreVert style={{ cursor: "pointer" }} />
+            <IconButton onClick={() => console.log("Attach file clicked")}>
+              <AttachFile />
+            </IconButton>
+            <IconButton onClick={() => console.log("More options clicked")}>
+              <MoreVert />
+            </IconButton>
           </IconContainer>
         </Toolbar>
       </AppBar>
