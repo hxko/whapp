@@ -1,4 +1,3 @@
-// src/app/login/page.tsx
 "use client";
 import Login from "@components/Login";
 import { styled } from "@mui/material/styles";
@@ -16,5 +15,5 @@ const LoginContainer = styled("div")(({ theme }) => ({
   alignItems: "center",
   justifyContent: "center",
   minHeight: "100vh",
-  backgroundColor: theme.palette.grey[100], // equivalent to bg-gray-100
+  backgroundColor: theme.palette.background.default, // Use default background color from MUI palette
 }));

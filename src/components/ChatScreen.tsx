@@ -28,7 +28,7 @@ import TimeAgo from "react-timeago";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
-import UrlPreviewComponent from "@/components/UrlPreviewComponent"; // Import the UrlPreviewComponent
+import UrlPreviewComponent from "@/components/UrlPreviewComponent";
 
 export type Params = {
   chatId?: string;
@@ -97,7 +97,7 @@ function ChatScreen() {
         await sendMessage(chatId, senderEmail, newMessage);
         setNewMessage("");
       } else {
-        console.error("User  is not logged in or email is not available.");
+        console.error("User is not logged in or email is not available.");
       }
     }
   };
@@ -114,7 +114,7 @@ function ChatScreen() {
   };
 
   const handleBackClick = () => {
-    router.push("/"); // Navigate back to the home page
+    router.push("/");
   };
 
   if (partnerLoading) {
@@ -152,6 +152,30 @@ function ChatScreen() {
 
   const groupedMessages = groupMessagesByDate(messages);
 
+  // Helper function to check if message is from current user
+  const isCurrentUser = (message: Messagetype) => {
+    return message.sender === user?.email;
+  };
+
+  // Helper function to render message content
+  const renderMessageContent = (msg: Messagetype) => {
+    const isUrl = isValidUrl(msg.text);
+
+    if (isUrl) {
+      // Create a message-like structure for URL preview with same alignment logic
+      return (
+        <MessageContainer
+          className={isCurrentUser(msg) ? "current-user" : "other-user"}
+        >
+          <UrlPreviewComponent url={msg.text} />
+        </MessageContainer>
+      );
+    } else {
+      // Render normal message
+      return <Message message={msg} />;
+    }
+  };
+
   return (
     <Container>
       <AppBar position="static">
@@ -169,7 +193,7 @@ function ChatScreen() {
               {lastSeen ? <TimeAgo date={lastSeen.toDate()} /> : "Unknown"}
             </Typography>
           </Box>
-          <Box flexGrow={1} /> {/* This will push the icons to the right */}
+          <Box flexGrow={1} />
           <IconContainer>
             <IconButton onClick={() => console.log("Attach file clicked")}>
               <AttachFile />
@@ -186,10 +210,7 @@ function ChatScreen() {
             <StyledChip label={label} variant="filled" />
             {msgs.map((msg) => (
               <React.Fragment key={msg.id}>
-                <Message message={msg} />
-                {msg.text && isValidUrl(msg.text) && (
-                  <UrlPreviewComponent url={msg.text} /> // Use UrlPreviewComponent here
-                )}
+                {renderMessageContent(msg)}
               </React.Fragment>
             ))}
           </LabelContainer>
@@ -213,11 +234,7 @@ function ChatScreen() {
             </InputAdornment>
           }
         />
-        <Button
-          onClick={handleSendMessage}
-          variant="contained"
-          color="primary" // Use primary color for the button
-        >
+        <Button onClick={handleSendMessage} variant="contained" color="primary">
           Send
         </Button>
       </InputContainer>
@@ -314,3 +331,22 @@ const BackButton = styled(IconButton)`
     display: none;
   }
 `;
+
+// Simple message container that mimics the Message component's alignment behavior
+const MessageContainer = styled(Box)(({ theme }) => ({
+  display: "flex",
+  marginBottom: theme.spacing(1),
+  width: "100%",
+
+  // Use CSS classes for alignment instead of props
+  "&.current-user": {
+    justifyContent: "flex-end",
+  },
+  "&.other-user": {
+    justifyContent: "flex-start",
+  },
+
+  "& > *": {
+    maxWidth: "70%", // Limit width like chat messages
+  },
+}));
