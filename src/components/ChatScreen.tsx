@@ -336,7 +336,7 @@ const BackButton = styled(IconButton)`
 // Simple message container that mimics the Message component's alignment behavior
 const MessageContainer = styled(Box)(({ theme }) => ({
   display: "flex",
-  marginBottom: theme.spacing(1),
+  margin: `${theme.spacing(1)} 0`,
   width: "100%",
 
   // Use CSS classes for alignment instead of props
