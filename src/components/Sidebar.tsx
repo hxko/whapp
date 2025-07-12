@@ -1,34 +1,31 @@
-// Sidebar.tsx
 "use client";
 import { styled } from "@mui/material/styles";
 import { Avatar, Button, IconButton } from "@mui/material";
 import ChatIcon from "@mui/icons-material/Chat";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import SearchBar from "@components/SearchBar"; // Import the SearchBar component
-import { useState } from "react"; // Import useState
-import ChatList from "@components/ChatList"; // Import the ChatList component
-import { signOut } from "firebase/auth"; // Import signOut function
-import useChats from "@hooks/useChats"; // Import custom hook
+import SearchBar from "@components/SearchBar";
+import { useState } from "react";
+import ChatList from "@components/ChatList";
+import useChats from "@hooks/useChats";
 import { useAuth } from "@/components/AuthProvider";
 import Footer from "@components/Footer";
-
 import {
   fetchUserData,
   validateEmail,
   createChatInDB,
   chatExists,
   getChatPartner,
-} from "@utils/utils"; // Import utility functions
-import { Chat } from "types/types"; // Import the Chat interface
-import { useRouter } from "next/navigation"; // Import useRouter for navigation
+} from "@utils/utils";
+import { Chat } from "types/types";
+import { useRouter } from "next/navigation";
 
 const Sidebar: React.FC = () => {
   const { user, signOut } = useAuth();
-  const [searchQuery, setSearchQuery] = useState<string>(""); // State to store the search input
-  const chats = useChats(user?.email || ""); // Use custom hook to get chats
-  const router = useRouter(); // Use Next.js router for navigation
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const chats = useChats(user?.email || "");
+  const router = useRouter();
 
-  // Prompt for email
+  // Function to prompt for email input
   const promptForEmail = (): string | null => {
     return prompt(
       "Please enter an email address for the user you wish to chat with"
@@ -38,43 +35,28 @@ const Sidebar: React.FC = () => {
   // Function to create a new chat
   const createChat = async (): Promise<void> => {
     const email = promptForEmail();
-    if (!email) return; // Exit if no email is provided
+    if (!email || !user) return alert("User  is not authenticated.");
 
-    // Ensure user is defined
-    if (!user) {
-      alert("User  is not authenticated.");
-      return;
-    }
-
-    // Check if the email is valid and not the current user's email
+    // Validate email and check if user exists
     if (!validateEmail(email) || email === user.email) {
-      alert("Please enter a valid email address.");
-      return;
+      return alert("Please enter a valid email address.");
     }
 
-    // Check if the user exists in the database
     const userExists = await fetchUserData(email);
-    if (!userExists) {
-      alert(`User  with email ${email} does not exist.`);
-      return; // Exit if the user does not exist
-    }
-
-    // Check if a chat already exists with the specified email
+    if (!userExists) return alert(`User  with email ${email} does not exist.`);
     if (chatExists(chats, email, user.email || "")) {
-      alert(`A chat with ${email} already exists.`);
-      return;
+      return alert(`A chat with ${email} already exists.`);
     }
 
-    // Create a new chat in the database
+    // Create a new chat and navigate to it
     const chatId = await createChatInDB(email, user);
     router.push(`/chat/${chatId}`);
-    console.log("Creating chat for email: ", email);
   };
 
-  // Function to sign out the current user
+  // Function to handle user sign out
   const handleSignOut = async () => {
     try {
-      await signOut(); // Sign out the current user
+      await signOut();
       console.log("User  signed out successfully.");
     } catch (error) {
       console.error("Error signing out: ", error);
@@ -123,7 +105,7 @@ export default Sidebar;
 const Container = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
-  backgroundColor: theme.palette.background.default, // Use theme background color
+  backgroundColor: theme.palette.background.default,
   height: "100vh",
 }));
 
@@ -136,8 +118,8 @@ const Header = styled("div")(({ theme }) => ({
   zIndex: 1,
   padding: "15px",
   height: "64px",
-  borderBottom: `1px solid ${theme.palette.divider}`, // Use theme divider color
-  backgroundColor: theme.palette.background.paper, // Use theme background color
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.paper,
 }));
 
 const UserAvatar = styled(Avatar)(({ theme }) => ({
@@ -152,11 +134,11 @@ const IconsContainer = styled("div")``;
 const SidebarButton = styled(Button)(({ theme }) => ({
   width: "90%",
   margin: "0 auto",
-  padding: "10px 20px", // Increase padding for a larger button
-  borderRadius: "8px", // Add border radius for rounded corners
+  padding: "10px 20px",
+  borderRadius: "8px",
 }));
 
 const ChatListContainer = styled("div")(({ theme }) => ({
-  flexGrow: 1, // Allow this container to grow and take available space
-  overflowY: "auto", // Enable scrolling if content overflows
+  flexGrow: 1,
+  overflowY: "auto",
 }));

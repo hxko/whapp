@@ -164,7 +164,7 @@ function ChatScreen() {
         <MessageContainer
           className={isCurrentUser(msg) ? "current-user" : "other-user"}
         >
-          <UrlPreviewComponent url={msg.text} />
+          <UrlPreviewComponent url={msg.text} timestamp={msg.timestamp} />
         </MessageContainer>
       );
     } else {

@@ -6,9 +6,12 @@ import {
   CardMedia,
   Typography,
   Link,
-  CircularProgress, // Import CircularProgress for loading indicator
+  CircularProgress,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import MessageTimestamp from "./MessageTimestamp"; // Import the MessageTimestamp component
+import { Timestamp } from "firebase/firestore";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // Import the external link icon
 
 interface PreviewData {
   title: string;
@@ -21,9 +24,13 @@ interface PreviewData {
 
 interface UrlPreviewComponentProps {
   url: string;
+  timestamp: Timestamp; // Add timestamp prop
 }
 
-const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({ url }) => {
+const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
+  url,
+  timestamp,
+}) => {
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +74,7 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({ url }) => {
             alignItems="center"
             height="100%"
           >
-            <CircularProgress /> {/* Centered loading spinner */}
+            <CircularProgress />
           </Box>
         </CardContent>
       </StyledCard>
@@ -104,47 +111,44 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({ url }) => {
           }}
         />
       )}
-      <CardContent>
-        <Typography variant="h6" component="h3" noWrap>
-          {previewData.title}
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            mb: 1,
-          }}
-        >
-          {previewData.description}
-        </Typography>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="caption" color="text.secondary">
-            {previewData.siteName || new URL(url).hostname}
+      <CardContent sx={{ position: "relative", paddingBottom: "30px" }}>
+        <Box>
+          <Typography variant="h6" component="h3" noWrap>
+            {previewData.title}
           </Typography>
-          <Typography variant="caption" color="primary">
-            {getMediaTypeLabel(previewData.mediaType)}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              mb: 1,
+            }}
+          >
+            {previewData.description}
           </Typography>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Box display="flex" alignItems="center">
+              <Typography variant="caption" color="text.secondary">
+                {previewData.siteName || new URL(url).hostname}
+              </Typography>
+              <OpenInNewIcon fontSize="small" sx={{ ml: 0.5 }} />{" "}
+              {/* External link icon */}
+            </Box>
+          </Box>
         </Box>
+        <TimestampContainer>
+          <MessageTimestamp timestamp={timestamp} />
+        </TimestampContainer>
       </CardContent>
     </StyledCard>
   );
-};
-
-const getMediaTypeLabel = (mediaType?: string): string => {
-  switch (mediaType) {
-    case "video":
-      return "▶️ Video";
-    case "image":
-      return "🖼️ Image";
-    case "audio":
-      return "🎵 Audio";
-    default:
-      return "🔗 Link";
-  }
 };
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -162,5 +166,14 @@ const StyledCardMedia = styled(CardMedia)({
   height: 120,
   objectFit: "cover",
 });
+
+// Styled component for the timestamp container
+const TimestampContainer = styled(Box)(({ theme }) => ({
+  position: "absolute", // Position absolute
+  bottom: 8, // Position from the bottom
+  right: 8, // Position from the right
+  fontSize: "12px",
+  color: theme.palette.text.secondary,
+}));
 
 export default UrlPreviewComponent;
