@@ -1,30 +1,42 @@
 "use client";
-import { styled } from "@mui/material/styles";
-import { Avatar, Box, Typography } from "@mui/material";
+
+import { styled } from "@mui/material/styles"; // Import styled from MUI
+import { Avatar, Box, Typography } from "@mui/material"; // Import MUI components
 import { useRouter } from "next/navigation"; // Use Next.js router for navigation
 import { useChatPartner } from "@/hooks/useChatPartner"; // Import the useChatPartner hook
 
+// Define the props for the ChatItem component
 interface ChatItemProps {
   chatId: string; // Unique identifier for the chat
 }
 
+/**
+ * ChatItem component displays a single chat item with partner information.
+ * It allows navigation to the chat view when clicked.
+ */
 const ChatItem: React.FC<ChatItemProps> = ({ chatId }) => {
   const router = useRouter(); // Use Next.js router for navigation
 
   // Use the useChatPartner hook to fetch chat partner data
   const { data: chatPartner, loading, error } = useChatPartner(chatId);
 
+  // Debugging: Log the chat partner data
+  console.log("Chat Partner Data:", chatPartner);
+
+  // Handle click event to navigate to the chat view
   const handleClick = () => {
     console.log(`Navigating to chat with ID: ${chatId}`); // Log the chatId
     router.push(`/chat/${chatId}`); // Navigate to the chat view with the chatId
   };
 
+  // Show loading state while fetching data
   if (loading) {
-    return <ChatItemContainer>Loading...</ChatItemContainer>; // Show loading state
+    return <ChatItemContainer>Loading...</ChatItemContainer>;
   }
 
+  // Show error state if fetching fails
   if (error) {
-    return <ChatItemContainer>Error loading chat partner</ChatItemContainer>; // Show error state
+    return <ChatItemContainer>Error loading chat partner</ChatItemContainer>;
   }
 
   return (
@@ -46,10 +58,10 @@ export default ChatItem;
 const ChatItemContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
-  gap: "10px",
-  marginBottom: "10px",
-  padding: "10px",
-  borderRadius: "5px",
+  gap: theme.spacing(1), // Use theme spacing for consistent gap
+  marginBottom: theme.spacing(1), // Use theme spacing for margin
+  padding: theme.spacing(1), // Use theme spacing for padding
+  borderRadius: theme.shape.borderRadius, // Use theme shape for border radius
   cursor: "pointer",
   transition: "background-color 0.3s",
   "&:hover": {
@@ -57,8 +69,11 @@ const ChatItemContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
-const ChatInfo = styled(Box)``;
+const ChatInfo = styled(Box)({
+  flex: 1, // Allow ChatInfo to take available space
+});
 
 const ChatPartner = styled(Typography)(({ theme }) => ({
   fontWeight: "bold",
+  color: theme.palette.text.primary, // Use theme color for text
 }));

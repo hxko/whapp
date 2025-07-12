@@ -29,27 +29,33 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import UrlPreviewComponent from "@/components/UrlPreviewComponent";
 
+// Define the type for URL parameters
 export type Params = {
   chatId?: string;
 };
 
 function ChatScreen() {
+  // Hooks and context
   const theme = useTheme();
   const { user } = useAuth();
   const { chatId } = useParams<Params>();
   const router = useRouter();
+
+  // State variables
   const [messages, setMessages] = useState<Messagetype[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
 
+  // Fetch chat partner data
   const {
     data: chatPartner,
     loading: partnerLoading,
     error: partnerError,
   } = useChatPartner(chatId);
 
+  // Fetch messages when chatId changes
   useLayoutEffect(() => {
     if (chatId) {
       const unsubscribe = fetchMessages(chatId, setMessages);
@@ -59,6 +65,7 @@ function ChatScreen() {
     }
   }, [chatId]);
 
+  // Scroll to the bottom of the message list when new messages arrive
   useLayoutEffect(() => {
     const el = messageListRef.current;
     if (el) {
@@ -66,6 +73,7 @@ function ChatScreen() {
     }
   }, [messages]);
 
+  // Handle click outside of emoji picker to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -87,33 +95,38 @@ function ChatScreen() {
     };
   }, [showEmojiPicker]);
 
+  // Send a new message
   const handleSendMessage = async () => {
     if (newMessage.trim() && chatId) {
       const senderEmail = user?.email;
       if (senderEmail) {
         await sendMessage(chatId, senderEmail, newMessage);
-        setNewMessage("");
+        setNewMessage(""); // Clear the input field after sending
       } else {
-        console.error("User is not logged in or email is not available.");
+        console.error("User  is not logged in or email is not available.");
       }
     }
   };
 
+  // Handle key down event for sending messages
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
-      event.preventDefault();
+      event.preventDefault(); // Prevent default behavior of Enter key
       handleSendMessage();
     }
   };
 
+  // Handle emoji selection
   const handleEmojiSelect = (emoji: { native: string }) => {
-    setNewMessage((prev) => prev + emoji.native);
+    setNewMessage((prev) => prev + emoji.native); // Append selected emoji to the message
   };
 
+  // Navigate back to the previous screen
   const handleBackClick = () => {
     router.push("/");
   };
 
+  // Loading and error states for chat partner
   if (partnerLoading) {
     return <Box>Loading chat partner...</Box>;
   }
@@ -122,14 +135,18 @@ function ChatScreen() {
     return <Box>Error loading chat partner: {partnerError}</Box>;
   }
 
+  // Group messages by date for better organization
   const groupMessagesByDate = (messages: Messagetype[]) => {
     const groupedMessages: { [key: string]: Messagetype[] } = {};
     const today = new Date();
+
     messages.forEach((msg) => {
       const messageDate = new Date(msg.timestamp.toDate());
       const diffTime = Math.abs(today.getTime() - messageDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       let label;
+
+      // Determine the label based on how old the message is
       if (diffDays < 7) {
         label = messageDate.toLocaleDateString("en-US", { weekday: "long" });
       } else {
@@ -139,17 +156,20 @@ function ChatScreen() {
           day: "numeric",
         });
       }
+
+      // Group messages by the determined label
       if (!groupedMessages[label]) {
         groupedMessages[label] = [];
       }
       groupedMessages[label].push(msg);
     });
+
     return groupedMessages;
   };
 
   const groupedMessages = groupMessagesByDate(messages);
 
-  // Helper function to check if message is from current user
+  // Helper function to check if a message is from the current user
   const isCurrentUser = (message: Messagetype) => {
     return message.sender === user?.email;
   };
@@ -159,7 +179,7 @@ function ChatScreen() {
     const isUrl = isValidUrl(msg.text);
 
     if (isUrl) {
-      // Create a message-like structure for URL preview with same alignment logic
+      // Render URL preview if the message is a URL
       return (
         <MessageContainer
           className={isCurrentUser(msg) ? "current-user" : "other-user"}
@@ -175,6 +195,7 @@ function ChatScreen() {
 
   return (
     <Container>
+      {/* AppBar with chat partner information */}
       <AppBar position="static">
         <Toolbar>
           <BackButton onClick={handleBackClick}>
@@ -205,6 +226,8 @@ function ChatScreen() {
           </IconContainer>
         </Toolbar>
       </AppBar>
+
+      {/* Message list */}
       <MessageList ref={messageListRef}>
         {Object.entries(groupedMessages).map(([label, msgs]) => (
           <LabelContainer key={label}>
@@ -217,6 +240,8 @@ function ChatScreen() {
           </LabelContainer>
         ))}
       </MessageList>
+
+      {/* Input area for new messages */}
       <InputContainer>
         <OutlinedInput
           style={{ marginRight: 10 }}
@@ -240,6 +265,7 @@ function ChatScreen() {
         </Button>
       </InputContainer>
 
+      {/* Emoji picker */}
       {showEmojiPicker && (
         <EmojiPickerContainer ref={emojiPickerRef}>
           <Picker data={data} onEmojiSelect={handleEmojiSelect} />
@@ -249,6 +275,7 @@ function ChatScreen() {
   );
 }
 
+// Function to validate if a string is a URL
 const isValidUrl = (string: string) => {
   const pattern = new RegExp(
     "^(https?:\\/\\/)?" + // protocol
@@ -329,7 +356,7 @@ const StyledChip = styled(Chip)(({ theme }) => ({
 
 const BackButton = styled(IconButton)`
   @media (min-width: 601px) {
-    display: none;
+    display: none; // Hide on larger screens
   }
 `;
 
@@ -337,14 +364,15 @@ const BackButton = styled(IconButton)`
 const MessageContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   marginBottom: theme.spacing(1),
+  marginTop: theme.spacing(1),
   width: "100%",
 
   // Use CSS classes for alignment instead of props
   "&.current-user": {
-    justifyContent: "flex-end",
+    justifyContent: "flex-end", // Align messages from the current user to the right
   },
   "&.other-user": {
-    justifyContent: "flex-start",
+    justifyContent: "flex-start", // Align messages from other users to the left
   },
 
   "& > *": {

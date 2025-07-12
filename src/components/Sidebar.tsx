@@ -69,13 +69,19 @@ const Sidebar: React.FC = () => {
     return chatPartner?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  // Construct the proxy URL for the user avatar
+  const avatarUrl = user?.photoURL;
+  const proxyUrl = avatarUrl
+    ? `/api/avatarProxy?url=${encodeURIComponent(avatarUrl)}`
+    : "";
+
   return (
     <Container>
       <Header>
         <UserAvatar
           title={user?.email || ""}
           onClick={handleSignOut}
-          src={user?.photoURL || ""}
+          src={proxyUrl} // Use the proxy URL for the avatar
           alt={user?.email || ""}
         />
         <IconsContainer>

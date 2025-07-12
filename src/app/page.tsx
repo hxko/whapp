@@ -1,9 +1,15 @@
 // src/app/page.tsx
 "use client";
+
 import Sidebar from "@components/Sidebar";
 import { styled } from "@mui/material/styles";
+import { Box, Typography } from "@mui/material"; // Import MUI components for consistent styling
 
-export default function Home() {
+/**
+ * Home component for the Chat App.
+ * Displays the sidebar and a welcome message.
+ */
+function Home() {
   return (
     <HomeContainer>
       <SidebarContainer>
@@ -11,41 +17,50 @@ export default function Home() {
       </SidebarContainer>
       <MainContent>
         <WelcomeMessage>
-          <h1>Welcome to Chat App</h1>
-          <p>Select a chat from the sidebar to start messaging</p>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Welcome to Chat App
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Select a chat from the sidebar to start messaging
+          </Typography>
         </WelcomeMessage>
       </MainContent>
     </HomeContainer>
   );
 }
 
+// Styled components for layout and styling
 const HomeContainer = styled("div")`
   display: flex;
-  height: 100vh;
+  height: 100vh; // Full viewport height
 `;
 
-const SidebarContainer = styled("div")`
-  width: 300px; // Default width for larger screens
-  border-right: 1px solid #e0e0e0;
+const SidebarContainer = styled("div")(({ theme }) => ({
+  width: 300, // Default width for larger screens
+  borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider color
 
-  @media (max-width: 600px) {
-    width: 100%; // Set width to 100% on small screens
-    border-right: none; // Remove border on small screens
-  }
-`;
+  // Responsive styles
+  [theme.breakpoints.down("sm")]: {
+    width: "100%", // Set width to 100% on small screens
+    borderRight: "none", // Remove border on small screens
+  },
+}));
 
-const MainContent = styled("div")`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+const MainContent = styled("div")(({ theme }) => ({
+  flex: 1,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 
-  @media (max-width: 600px) {
-    display: none; // Hide MainContent on small screens
-  }
-`;
+  // Hide MainContent on small screens
+  [theme.breakpoints.down("sm")]: {
+    display: "none",
+  },
+}));
 
-const WelcomeMessage = styled("div")`
-  text-align: center;
-  color: #666;
-`;
+const WelcomeMessage = styled("div")(({ theme }) => ({
+  textAlign: "center",
+  color: theme.palette.text.secondary, // Use theme color for text
+}));
+
+export default Home;

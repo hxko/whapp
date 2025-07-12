@@ -1,18 +1,24 @@
 // src/components/Login.tsx
 "use client";
+
 import { Button, Typography, Box } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { auth, provider } from "../../firebase";
-import { signInWithPopup, signOut } from "firebase/auth";
+import { auth, provider } from "../../firebase"; // Import Firebase auth and provider
+import { signInWithPopup, signOut } from "firebase/auth"; // Import Firebase authentication methods
 import { useRouter } from "next/navigation"; // Import useRouter for navigation
 
+/**
+ * Login component for user authentication.
+ * Allows users to sign in with Google.
+ */
 const Login = () => {
   const router = useRouter(); // Use Next.js router for navigation
+
   // Function to sign in with Google
   const handleSignInWithGoogle = async () => {
     try {
       await signOut(auth); // Sign out the current user before signing in with a different account
-      const result = await signInWithPopup(auth, provider); // Sign in with Google
+      await signInWithPopup(auth, provider); // Sign in with Google
       router.push("/"); // Redirect to home after successful login
     } catch (error) {
       console.error("Error signing in with Google: ", error);
@@ -21,7 +27,7 @@ const Login = () => {
 
   return (
     <Container>
-      {/* //TODO: get your own Logo */}
+      {/* Logo placeholder */}
       <Logo
         src="https://www.freeiconspng.com/uploads/logo-whatsapp-png-pic-0.png"
         alt="WhatsApp Logo"
@@ -40,6 +46,7 @@ const Login = () => {
   );
 };
 
+// Styled components for consistent theming
 const Container = styled(Box)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
@@ -59,16 +66,17 @@ const Logo = styled("img")`
   margin-bottom: 20px;
 `;
 
-const Title = styled(Typography)`
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 8px;
-`;
+const Title = styled(Typography)(({ theme }) => ({
+  fontSize: "24px",
+  fontWeight: 600,
+  marginBottom: theme.spacing(1), // Use theme spacing for margin
+  color: theme.palette.text.primary, // Use theme color for text
+}));
 
-const Subtitle = styled(Typography)`
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 20px;
-`;
+const Subtitle = styled(Typography)(({ theme }) => ({
+  fontSize: "16px",
+  color: theme.palette.text.secondary, // Use theme color for subtitle
+  marginBottom: theme.spacing(2), // Use theme spacing for margin
+}));
 
 export default Login;

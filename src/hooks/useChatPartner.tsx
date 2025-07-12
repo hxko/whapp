@@ -1,4 +1,3 @@
-// hooks/useChatPartner.ts
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { fetchUserData, getChatById, getChatPartner } from "@/utils/utils";
@@ -8,7 +7,7 @@ interface ChatPartnerData {
   email: string;
   displayName?: string;
   photoURL?: string;
-  lastSeen?: Timestamp | null; // Add lastSeen to the ChatPartnerData interface
+  lastSeen?: Timestamp | null;
 }
 
 export const useChatPartner = (
@@ -30,11 +29,24 @@ export const useChatPartner = (
           const partnerEmail = getChatPartner(chat, user.email);
           if (partnerEmail) {
             const userData = await fetchUserData(partnerEmail);
+            const avatarUrl = userData?.photoURL;
+            const proxyUrl = `/api/avatarProxy?url=${encodeURIComponent(
+              avatarUrl
+            )}`;
+
+            const avatarResponse = await fetch(proxyUrl);
+            if (!avatarResponse.ok) {
+              throw new Error("Failed to fetch avatar");
+            }
+
+            const avatarBlob = await avatarResponse.blob();
+            const photoURL = URL.createObjectURL(avatarBlob);
+
             setData({
               email: partnerEmail,
               displayName: userData?.displayName || userData?.name,
-              photoURL: userData?.photoURL,
-              lastSeen: userData?.lastSeen || null, // Get lastSeen from userData
+              photoURL: photoURL,
+              lastSeen: userData?.lastSeen || null,
             });
           }
         }

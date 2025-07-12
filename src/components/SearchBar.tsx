@@ -1,26 +1,32 @@
-import { styled } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { styled } from "@mui/material/styles"; // Import styled from MUI
+import SearchIcon from "@mui/icons-material/Search"; // Import the Search icon
 import React from "react";
 
+// Define the props for the SearchBar component
 interface SearchBarProps {
-  // Define any props if needed
-  input: string;
-  onSearch: (input: string) => void;
+  input: string; // The current input value
+  onSearch: (input: string) => void; // Callback function to handle search input changes
 }
 
+/**
+ * SearchBar component for searching through chats.
+ * Displays an input field with a search icon.
+ */
 const SearchBar: React.FC<SearchBarProps> = ({ input, onSearch }) => {
+  // Handle input changes and call the onSearch callback
   const handleChangeInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onSearch(event.target.value);
+    onSearch(event.target.value); // Pass the new input value to the onSearch function
   };
 
   return (
     <SearchContainer>
-      <SearchIcon />
+      <SearchIcon /> {/* Display the search icon */}
       <SearchInput
+        id="SearchChats"
         type="text"
-        placeholder="Search in chats"
-        value={input}
-        onChange={handleChangeInput}
+        placeholder="Search in chats" // Placeholder text for the input field
+        value={input} // Controlled input value
+        onChange={handleChangeInput} // Handle input changes
       />
     </SearchContainer>
   );
@@ -28,15 +34,23 @@ const SearchBar: React.FC<SearchBarProps> = ({ input, onSearch }) => {
 
 export default SearchBar;
 
-const SearchContainer = styled("div")`
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  border-radius: 2px;
-`;
-const SearchInput = styled("input")`
-  display: flex;
-  flex: 1;
-  outline: none;
-  padding: 2px;
-`;
+// Styled components for consistent styling
+const SearchContainer = styled("div")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  padding: theme.spacing(1), // Use theme spacing for padding
+  borderRadius: theme.shape.borderRadius, // Use theme shape for border radius
+  backgroundColor: theme.palette.background.paper, // Use theme color for background
+  boxShadow: theme.shadows[1], // Use theme shadows for a subtle effect
+}));
+
+const SearchInput = styled("input")(({ theme }) => ({
+  flex: 1, // Allow the input to grow and fill available space
+  outline: "none", // Remove default outline
+  padding: theme.spacing(1), // Use theme spacing for padding
+  border: `1px solid ${theme.palette.divider}`, // Use theme color for border
+  borderRadius: theme.shape.borderRadius, // Use theme shape for border radius
+  "&:focus": {
+    borderColor: theme.palette.primary.main, // Change border color on focus
+  },
+}));
