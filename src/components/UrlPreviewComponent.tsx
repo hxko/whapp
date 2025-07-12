@@ -6,7 +6,7 @@ import {
   CardMedia,
   Typography,
   Link,
-  Skeleton,
+  CircularProgress, // Import CircularProgress for loading indicator
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
@@ -34,9 +34,6 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({ url }) => {
         setLoading(true);
         setError(null);
 
-        // THIS IS WHERE THE FRONTEND CALLS YOUR BACKEND API
-        // It sends the URL to your /api/proxy endpoint
-        // Your backend then uses link-preview-js to extract the metadata
         const response = await fetch(
           `/api/proxy?url=${encodeURIComponent(url)}`
         );
@@ -45,8 +42,6 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({ url }) => {
           throw new Error("Failed to fetch preview");
         }
 
-        // The response contains the metadata extracted by link-preview-js
-        // (or the fallback HTML parser if link-preview-js failed)
         const data: PreviewData = await response.json();
         setPreviewData(data);
       } catch (err) {
@@ -65,10 +60,15 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({ url }) => {
   if (loading) {
     return (
       <StyledCard>
-        <Skeleton variant="rectangular" width="100%" height={120} />
         <CardContent>
-          <Skeleton variant="text" width="80%" />
-          <Skeleton variant="text" width="60%" />
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="100%"
+          >
+            <CircularProgress /> {/* Centered loading spinner */}
+          </Box>
         </CardContent>
       </StyledCard>
     );
@@ -100,7 +100,6 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({ url }) => {
           image={previewData.images[0]}
           title={previewData.title}
           onError={(e: React.SyntheticEvent<HTMLDivElement, Event>) => {
-            // Hide image if it fails to load
             e.currentTarget.style.display = "none";
           }}
         />

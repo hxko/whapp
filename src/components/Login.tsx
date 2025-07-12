@@ -21,6 +21,7 @@ const Login = () => {
 
   return (
     <Container>
+      {/* //TODO: get your own Logo */}
       <Logo
         src="https://www.freeiconspng.com/uploads/logo-whatsapp-png-pic-0.png"
         alt="WhatsApp Logo"

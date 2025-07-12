@@ -18,7 +18,6 @@ import { Messagetype } from "types/types";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import { useAuth } from "@/components/AuthProvider";
 import { useChatPartner } from "@/hooks/useChatPartner";
-import { useLastSeen } from "@/hooks/useLastSeen";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import Message from "@components/Message";
@@ -50,8 +49,6 @@ function ChatScreen() {
     loading: partnerLoading,
     error: partnerError,
   } = useChatPartner(chatId);
-
-  const lastSeen = useLastSeen(chatPartner?.email);
 
   useLayoutEffect(() => {
     if (chatId) {
@@ -190,7 +187,11 @@ function ChatScreen() {
             </Typography>
             <Typography variant="body2" color={theme.palette.text.secondary}>
               Last active:{" "}
-              {lastSeen ? <TimeAgo date={lastSeen.toDate()} /> : "Unknown"}
+              {chatPartner?.lastSeen ? (
+                <TimeAgo date={chatPartner?.lastSeen.toDate()} />
+              ) : (
+                "Unknown"
+              )}
             </Typography>
           </Box>
           <Box flexGrow={1} />

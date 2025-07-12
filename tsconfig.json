@@ -24,7 +24,8 @@
       "@components/*": ["components/*"], // Maps @components to the components directory
       "@utils/*": ["utils/*"], // Maps @utils to the utils directory
       "@hooks/*": ["hooks/*"], // Maps @hooks to the hooks directory
-      "@types/*": ["types/*"] // Maps @types to the types directory
+      "@types/*": ["types/*"], // Maps @types to the types directory
+      "@firebase/*": ["firebase/*"]
     }
   },
   "include": [

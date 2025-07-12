@@ -1,12 +1,14 @@
-// hooks useChatPartner.ts
+// hooks/useChatPartner.ts
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { fetchUserData, getChatById, getChatPartner } from "@/utils/utils";
+import { Timestamp } from "firebase/firestore";
 
 interface ChatPartnerData {
   email: string;
   displayName?: string;
   photoURL?: string;
+  lastSeen?: Timestamp | null; // Add lastSeen to the ChatPartnerData interface
 }
 
 export const useChatPartner = (
@@ -32,6 +34,7 @@ export const useChatPartner = (
               email: partnerEmail,
               displayName: userData?.displayName || userData?.name,
               photoURL: userData?.photoURL,
+              lastSeen: userData?.lastSeen || null, // Get lastSeen from userData
             });
           }
         }
