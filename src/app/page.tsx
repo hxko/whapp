@@ -25,8 +25,13 @@ const HomeContainer = styled("div")`
 `;
 
 const SidebarContainer = styled("div")`
-  width: 300px;
+  width: 300px; // Default width for larger screens
   border-right: 1px solid #e0e0e0;
+
+  @media (max-width: 600px) {
+    width: 100%; // Set width to 100% on small screens
+    border-right: none; // Remove border on small screens
+  }
 `;
 
 const MainContent = styled("div")`
@@ -34,6 +39,10 @@ const MainContent = styled("div")`
   display: flex;
   align-items: center;
   justify-content: center;
+
+  @media (max-width: 600px) {
+    display: none; // Hide MainContent on small screens
+  }
 `;
 
 const WelcomeMessage = styled("div")`

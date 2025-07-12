@@ -4,7 +4,6 @@ import React from "react";
 import { useParams } from "next/navigation"; // Use useParams from next/navigation
 import Sidebar from "@components/Sidebar"; // Import the Sidebar component
 import { styled } from "@mui/material/styles";
-import Typography from "@mui/material/Typography"; // Import MUI Typography
 import ChatScreen from "@/components/ChatScreen";
 
 const ChatView: React.FC = () => {
@@ -12,9 +11,11 @@ const ChatView: React.FC = () => {
 
   return (
     <Container>
-      <Sidebar />
+      <SidebarContainer>
+        <Sidebar />
+      </SidebarContainer>
       <ChatContainer>
-        <ChatScreen></ChatScreen>
+        <ChatScreen />
       </ChatContainer>
     </Container>
   );
@@ -36,4 +37,17 @@ const ChatContainer = styled("div")`
 
 const Container = styled("div")`
   display: flex;
+
+  @media (max-width: 600px) {
+    flex-direction: column; // Stack elements vertically on small screens
+  }
+`;
+
+const SidebarContainer = styled("div")`
+  width: 300px;
+  border-right: 1px solid #e0e0e0;
+
+  @media (max-width: 600px) {
+    display: none; // Hide sidebar on small screens in ChatView
+  }
 `;

@@ -12,7 +12,7 @@ import {
   Toolbar,
   Avatar,
   Typography,
-  IconButton, // Import IconButton
+  IconButton,
 } from "@mui/material";
 import { Messagetype } from "types/types";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
@@ -22,10 +22,13 @@ import { useLastSeen } from "@/hooks/useLastSeen";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import Message from "@components/Message";
-import MoreVert from "@mui/icons-material/MoreVert"; // Import MoreVert icon
-import AttachFile from "@mui/icons-material/AttachFile"; // Import AttachFile icon
-import TimeAgo from "react-timeago"; // Import TimeAgo
+import MoreVert from "@mui/icons-material/MoreVert";
+import AttachFile from "@mui/icons-material/AttachFile";
+import TimeAgo from "react-timeago";
 import OutlinedInput from "@mui/material/OutlinedInput";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useRouter } from "next/navigation";
+import UrlPreviewComponent from "@/components/UrlPreviewComponent"; // Import the UrlPreviewComponent
 
 export type Params = {
   chatId?: string;
@@ -35,6 +38,7 @@ function ChatScreen() {
   const theme = useTheme();
   const { user } = useAuth();
   const { chatId } = useParams<Params>();
+  const router = useRouter();
   const [messages, setMessages] = useState<Messagetype[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -47,7 +51,6 @@ function ChatScreen() {
     error: partnerError,
   } = useChatPartner(chatId);
 
-  // Use the useLastSeen hook to get the last seen timestamp
   const lastSeen = useLastSeen(chatPartner?.email);
 
   useLayoutEffect(() => {
@@ -110,6 +113,10 @@ function ChatScreen() {
     setNewMessage((prev) => prev + emoji.native);
   };
 
+  const handleBackClick = () => {
+    router.push("/"); // Navigate back to the home page
+  };
+
   if (partnerLoading) {
     return <Box>Loading chat partner...</Box>;
   }
@@ -149,6 +156,9 @@ function ChatScreen() {
     <Container>
       <AppBar position="static">
         <Toolbar>
+          <BackButton onClick={handleBackClick}>
+            <ArrowBackIcon />
+          </BackButton>
           <Avatar src={chatPartner?.photoURL} alt={chatPartner?.email} />
           <Box sx={{ marginLeft: 2 }}>
             <Typography variant="body1" fontWeight="bold">
@@ -175,7 +185,12 @@ function ChatScreen() {
           <LabelContainer key={label}>
             <StyledChip label={label} variant="filled" />
             {msgs.map((msg) => (
-              <Message key={msg.id} message={msg} />
+              <React.Fragment key={msg.id}>
+                <Message message={msg} />
+                {msg.text && isValidUrl(msg.text) && (
+                  <UrlPreviewComponent url={msg.text} /> // Use UrlPreviewComponent here
+                )}
+              </React.Fragment>
             ))}
           </LabelContainer>
         ))}
@@ -216,6 +231,21 @@ function ChatScreen() {
   );
 }
 
+const isValidUrl = (string: string) => {
+  const pattern = new RegExp(
+    "^(https?:\\/\\/)?" + // protocol
+      "((([a-z0-9\\-]+\\.)+[a-z]{2,})|" + // domain name
+      "localhost|" + // localhost
+      "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|" + // IP address
+      "\\[?[a-f0-9:\\.]+\\])" + // IPv6
+      "(\\:\\d+)?(\\/[-a-z0-9%_.~+]*)*" + // port and path
+      "(\\?[;&a-z0-9%_.~+=-]*)?" + // query string
+      "(\\#[-a-z0-9_]*)?$",
+    "i"
+  ); // fragment locator
+  return !!pattern.test(string);
+};
+
 export default ChatScreen;
 
 // Styled components for layout and styling
@@ -226,7 +256,7 @@ const Container = styled(Box)(({ theme }) => ({
   backgroundColor:
     theme.palette.mode === "dark"
       ? theme.palette.background.default
-      : theme.palette.grey[100], // Use theme background color for dark mode
+      : theme.palette.grey[100],
 }));
 
 const MessageList = styled(Box)(({ theme }) => ({
@@ -237,17 +267,17 @@ const MessageList = styled(Box)(({ theme }) => ({
   backgroundColor:
     theme.palette.mode === "dark"
       ? theme.palette.background.paper
-      : theme.palette.grey[200], // Use theme background color for dark mode
+      : theme.palette.grey[200],
   "&::-webkit-scrollbar": {
-    display: "none", // For Chrome, Safari, and Opera
+    display: "none",
   },
-  scrollbarWidth: "none", // For Firefox
+  scrollbarWidth: "none",
 }));
 
 const InputContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   padding: theme.spacing(2),
-  background: theme.palette.background.paper, // Use theme background color
+  background: theme.palette.background.paper,
 }));
 
 const EmojiPickerContainer = styled(Box)(({ theme }) => ({
@@ -275,6 +305,12 @@ const StyledChip = styled(Chip)(({ theme }) => ({
   backgroundColor:
     theme.palette.mode === "dark"
       ? theme.palette.grey[800]
-      : theme.palette.grey[400], // Use theme primary color for dark mode
-  color: theme.palette.common.white, // Use theme common white color
+      : theme.palette.grey[400],
+  color: theme.palette.common.white,
 }));
+
+const BackButton = styled(IconButton)`
+  @media (min-width: 601px) {
+    display: none;
+  }
+`;
