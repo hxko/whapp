@@ -2,32 +2,48 @@ import type { NextConfig } from "next";
 
 const developmentCSP = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' localhost:* 127.0.0.1:* *.localhost:*;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com localhost:* 127.0.0.1:* *.localhost:* http://localhost:*;
   style-src 'self' 'unsafe-inline' localhost:* 127.0.0.1:* *.localhost:*;
-  img-src 'self' blob: data: localhost:* 127.0.0.1:* *.localhost:*;
+  img-src 'self' blob: data: localhost:* 127.0.0.1:* *.localhost:* https://lh3.googleusercontent.com https:;
   font-src 'self' localhost:* 127.0.0.1:* *.localhost:*;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'self';
-  connect-src 'self' localhost:* 127.0.0.1:* *.localhost:* ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:*;
+  connect-src 'self'
+    localhost 127.0.0.1 *.localhost
+    ws://localhost ws://127.0.0.1 
+    wss://localhost wss://127.0.0.1
+    https://securetoken.googleapis.com
+    https://identitytoolkit.googleapis.com
+    https://firestore.googleapis.com;
   worker-src 'self' blob:;
-  child-src 'self' blob:;
+  child-src 'self' blob: https://*.firebaseapp.com https://*.google.com https://*.gstatic.com;
   manifest-src 'self';
   media-src 'self' blob: data: localhost:* 127.0.0.1:* *.localhost:*;
 `;
 
 const productionCSP = `
   default-src 'self';
-  script-src 'self' 'strict-dynamic' 'sha256-YOUR_SCRIPT_HASH_HERE' https://www.gstatic.com;
+  script-src 'self' 'unsafe-inline' https://www.gstatic.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  img-src 'self' blob: data: https://*.vercel.app https://your-domain.com;
+  img-src 'self' blob: data: https://*.vercel.app https://your-domain.com https:;
   font-src 'self' https://fonts.gstatic.com;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
-  connect-src 'self' https://*.vercel.app https://vitals.vercel-insights.com https://your-api.com https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com;
+  connect-src 'self'
+    localhost:* 127.0.0.1:* *.localhost:* 
+    https://*.vercel.app
+    https://vitals.vercel-insights.com
+    https://your-api.com
+    https://*.googleapis.com
+    https://*.firebaseio.com
+    https://firestore.googleapis.com
+    https://*.firebaseapp.com
+    https://securetoken.googleapis.com
+    https://identitytoolkit.googleapis.com;
   worker-src 'self' blob:;
   child-src 'self';
   manifest-src 'self';
@@ -70,103 +86,6 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
-  },
-
-  webpack: (config, { dev, isServer }) => {
-    // Your existing webpack configuration
-    if (!dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: "all",
-          minSize: 20000,
-          maxSize: 100000,
-          cacheGroups: {
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: "react",
-              priority: 40,
-              reuseExistingChunk: true,
-            },
-            firebase: {
-              test: /[\\/]node_modules[\\/](firebase|@firebase)[\\/]/,
-              name: "firebase",
-              priority: 35,
-              chunks: "async",
-              reuseExistingChunk: true,
-            },
-            muiCore: {
-              test: /[\\/]node_modules[\\/]@mui[\\/]/,
-              name: "mui-core",
-              priority: 30,
-              chunks: "async",
-              reuseExistingChunk: true,
-            },
-            muiIcons: {
-              test: /[\\/]node_modules[\\/]@mui[\\/]/,
-              name: "mui-icons",
-              priority: 29,
-              chunks: "async",
-              reuseExistingChunk: true,
-            },
-            emotion: {
-              test: /[\\/]node_modules[\\/]@emotion[\\/]/,
-              name: "emotion",
-              priority: 28,
-              chunks: "async",
-              reuseExistingChunk: true,
-            },
-            emoji: {
-              test: /[\\/]node_modules[\\/](emoji-mart|@emoji-mart)[\\/]/,
-              name: "emoji",
-              priority: 25,
-              chunks: "async",
-              reuseExistingChunk: true,
-            },
-            vendorLarge: {
-              test: /[\\/]node_modules[\\/]/,
-              name: "vendor-large",
-              priority: 20,
-              chunks: "async",
-              minSize: 50000,
-              reuseExistingChunk: true,
-            },
-            vendorSmall: {
-              test: /[\\/]node_modules[\\/]/,
-              name: "vendor-small",
-              priority: 15,
-              chunks: "all",
-              maxSize: 50000,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-        usedExports: true,
-        sideEffects: false,
-      };
-    }
-
-    if (dev) {
-      config.optimization = {
-        ...config.optimization,
-        removeAvailableModules: false,
-        removeEmptyChunks: false,
-        splitChunks: false,
-      };
-    }
-
-    if (process.env.ANALYZE === "true" && !isServer) {
-      const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
-      config.plugins?.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: "static",
-          openAnalyzer: false,
-          reportFilename: "bundle-analyzer.html",
-        })
-      );
-    }
-
-    return config;
   },
 
   async headers() {

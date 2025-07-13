@@ -217,10 +217,10 @@ function ChatScreen() {
           </Box>
           <Box flexGrow={1} />
           <IconContainer>
-            <IconButton onClick={() => console.log("Attach file clicked")}>
+            <IconButton>
               <AttachFile />
             </IconButton>
-            <IconButton onClick={() => console.log("More options clicked")}>
+            <IconButton>
               <MoreVert />
             </IconButton>
           </IconContainer>

@@ -57,7 +57,6 @@ const Sidebar: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      console.log("User  signed out successfully.");
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -65,13 +64,11 @@ const Sidebar: React.FC = () => {
 
   // Function to handle chat actions
   const handleChatActions = () => {
-    console.log("Chat actions clicked");
     // Add your chat actions logic here
   };
 
   // Function to handle more options
   const handleMoreOptions = () => {
-    console.log("More options clicked");
     // Add your more options logic here
   };
 

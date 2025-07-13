@@ -22,7 +22,6 @@ const ChatItem: React.FC<ChatItemProps> = ({ chatId }) => {
 
   // Handle click event to navigate to the chat view
   const handleClick = () => {
-    console.log(`Navigating to chat with ID: ${chatId}`); // Log the chatId
     router.push(`/chat/${chatId}`); // Navigate to the chat view with the chatId
   };
 

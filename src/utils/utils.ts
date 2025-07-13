@@ -114,7 +114,6 @@ export const sendMessage = async (
       text,
       timestamp: serverTimestamp(),
     });
-    console.log("Message sent!");
   } catch (error) {
     console.error("Error sending message: ", error);
   }
