@@ -11,10 +11,9 @@ import {
   onSnapshot,
   orderBy,
 } from "firebase/firestore";
-import { db, auth } from "../../firebase"; // Import your Firestore instance
+import { db } from "../../firebase"; // Import your Firestore instance
 import EmailValidator from "email-validator"; // Import email validation library
 import { Chat } from "../types/types"; // Import the Chat interface
-import { useAuthState } from "react-firebase-hooks/auth";
 import { User } from "firebase/auth"; // Import User type from Firebase
 import { Messagetype } from "types/types";
 import { Timestamp } from "firebase/firestore"; // Import Firestore Timestamp
@@ -124,7 +123,7 @@ export const sendMessage = async (
 // Function to fetch messages
 export const fetchMessages = (
   chatId: string,
-  setMessages: React.Dispatch<React.SetStateAction<any[]>>
+  setMessages: React.Dispatch<React.SetStateAction<Messagetype[]>>
 ) => {
   const messagesRef = collection(db, `chats/${chatId}/messages`);
   const q = query(messagesRef, orderBy("timestamp"));
@@ -136,7 +135,7 @@ export const fetchMessages = (
         id: doc.id,
         sender: data.sender, // Ensure this property exists
         text: data.text, // Ensure this property exists
-        timestamp: data.timestamp || Timestamp.now(), // Use current date if null // Convert Firestore timestamp to Date
+        timestamp: data.timestamp || Timestamp.now(), // Use current date if null
       });
     });
     setMessages(messages);

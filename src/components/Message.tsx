@@ -61,11 +61,3 @@ const MessageText = styled(Box, {
   overflowWrap: "break-word", // Ensure that long words break correctly
   whiteSpace: "pre-wrap", // Preserve whitespace and wrap text
 }));
-
-// Styled component for the timestamp text
-const TimestampContainer = styled(Typography)`
-  font-size: 12px;
-  color: ${({ theme }) => theme.palette.text.secondary};
-  align-self: flex-end;
-  margin-top: 5px;
-`;

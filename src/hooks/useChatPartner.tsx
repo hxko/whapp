@@ -51,6 +51,7 @@ export const useChatPartner = (
           }
         }
       } catch (err) {
+        console.error(err); // Log the error for debugging
         setError("Failed to load chat partner");
       } finally {
         setLoading(false);

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"; // Import React hooks
-import { auth, db } from "../../firebase"; // Import Firebase auth and Firestore database instances
+import { useEffect, useState, useCallback } from "react"; // Import React hooks
+import { db } from "../../firebase"; // Import Firebase auth and Firestore database instances
 import { collection, getDocs, query, where } from "firebase/firestore"; // Import Firestore functions
 import { Chat } from "types/types"; // Import the Chat interface
 
@@ -8,7 +8,7 @@ const useChats = (userEmail: string | null) => {
   const [chats, setChats] = useState<Chat[]>([]); // State to hold the list of chats
 
   // Function to fetch chats for the user
-  const getUserChats = async () => {
+  const getUserChats = useCallback(async () => {
     if (!userEmail) return []; // Return an empty array if no user email is provided
 
     const chatsRef = collection(db, "chats"); // Reference to the "chats" collection in Firestore
@@ -23,7 +23,7 @@ const useChats = (userEmail: string | null) => {
       id: doc.id, // Document ID
       ...doc.data(), // Spread the document data
     })) as Chat[];
-  };
+  }, [userEmail]); // Add userEmail as a dependency
 
   // Effect to fetch chats whenever the userEmail changes
   useEffect(() => {
@@ -33,7 +33,7 @@ const useChats = (userEmail: string | null) => {
     };
 
     fetchChats(); // Call the fetch function
-  }, [userEmail]); // Dependency array to re-run effect when userEmail changes
+  }, [getUserChats]); // Include getUser Chats in the dependency array
 
   return chats; // Return the list of chats
 };

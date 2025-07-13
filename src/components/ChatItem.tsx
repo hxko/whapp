@@ -20,9 +20,6 @@ const ChatItem: React.FC<ChatItemProps> = ({ chatId }) => {
   // Use the useChatPartner hook to fetch chat partner data
   const { data: chatPartner, loading, error } = useChatPartner(chatId);
 
-  // Debugging: Log the chat partner data
-  console.log("Chat Partner Data:", chatPartner);
-
   // Handle click event to navigate to the chat view
   const handleClick = () => {
     console.log(`Navigating to chat with ID: ${chatId}`); // Log the chatId

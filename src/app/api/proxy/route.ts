@@ -14,16 +14,21 @@ interface PreviewData {
   mediaType?: string;
 }
 
-// Type guard to check if the response has the properties we need
-function isLinkPreviewResponse(response: any): response is {
+interface LinkPreviewResponse {
   title?: string;
   description?: string;
   images?: string[];
   url?: string;
   siteName?: string;
   mediaType?: string;
-} {
-  return response && typeof response === "object";
+}
+// Type guard to check if the response has the properties we need
+function isLinkPreviewResponse(
+  response: unknown
+): response is LinkPreviewResponse {
+  return (
+    typeof response === "object" && response !== null && "url" in response // Check for at least one required property
+  );
 }
 
 export async function GET(req: NextRequest) {

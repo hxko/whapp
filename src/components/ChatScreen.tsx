@@ -3,7 +3,6 @@ import { sendMessage, fetchMessages } from "@utils/utils";
 import { useParams } from "next/navigation";
 import { styled, useTheme } from "@mui/material/styles";
 import {
-  TextField,
   Button,
   InputAdornment,
   Chip,
@@ -38,7 +37,8 @@ function ChatScreen() {
   // Hooks and context
   const theme = useTheme();
   const { user } = useAuth();
-  const { chatId } = useParams<Params>();
+  const params = useParams<Params>(); // Get params from the router
+  const chatId = params?.chatId; // Use optional chaining to safely access chatId
   const router = useRouter();
 
   // State variables
@@ -244,6 +244,7 @@ function ChatScreen() {
       {/* Input area for new messages */}
       <InputContainer>
         <OutlinedInput
+          id="chat-input"
           style={{ marginRight: 10 }}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
@@ -325,21 +326,21 @@ const InputContainer = styled(Box)(({ theme }) => ({
   background: theme.palette.background.paper,
 }));
 
-const EmojiPickerContainer = styled(Box)(({ theme }) => ({
+const EmojiPickerContainer = styled(Box)(() => ({
   position: "absolute",
   bottom: "60px",
   left: "10px",
   zIndex: 1000,
 }));
 
-const LabelContainer = styled(Box)(({ theme }) => ({
+const LabelContainer = styled(Box)(() => ({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   margin: "10px 0",
 }));
 
-const IconContainer = styled(Box)(({ theme }) => ({
+const IconContainer = styled(Box)(() => ({
   display: "flex",
   alignItems: "center",
   marginLeft: "auto",
@@ -349,9 +350,10 @@ const StyledChip = styled(Chip)(({ theme }) => ({
   margin: "10px 0",
   backgroundColor:
     theme.palette.mode === "dark"
-      ? theme.palette.grey[800]
-      : theme.palette.grey[400],
+      ? theme.palette.grey[700] // Darker background for better contrast
+      : theme.palette.grey[600], // Darker background for better contrast
   color: theme.palette.common.white,
+  fontWeight: 500, // Slightly bolder text for better readability
 }));
 
 const BackButton = styled(IconButton)`

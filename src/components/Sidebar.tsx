@@ -63,6 +63,18 @@ const Sidebar: React.FC = () => {
     }
   };
 
+  // Function to handle chat actions
+  const handleChatActions = () => {
+    console.log("Chat actions clicked");
+    // Add your chat actions logic here
+  };
+
+  // Function to handle more options
+  const handleMoreOptions = () => {
+    console.log("More options clicked");
+    // Add your more options logic here
+  };
+
   // Filter chats based on search input
   const filteredChats = chats.filter((chat: Chat) => {
     const chatPartner = getChatPartner(chat, user?.email || "");
@@ -79,22 +91,44 @@ const Sidebar: React.FC = () => {
     <Container>
       <Header>
         <UserAvatar
-          title={user?.email || ""}
+          title={user?.email || "User avatar - click to sign out"}
           onClick={handleSignOut}
           src={proxyUrl} // Use the proxy URL for the avatar
-          alt={user?.email || ""}
+          alt={user?.email ? `${user.email} avatar` : "User avatar"}
+          role="button"
+          aria-label={`Sign out ${user?.email || "user"}`}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleSignOut();
+            }
+          }}
         />
         <IconsContainer>
-          <IconButton>
+          <IconButton
+            onClick={handleChatActions}
+            aria-label="Chat actions"
+            title="Chat actions"
+          >
             <ChatIcon />
           </IconButton>
-          <IconButton>
+          <IconButton
+            onClick={handleMoreOptions}
+            aria-label="More options"
+            title="More options"
+          >
             <MoreVertIcon />
           </IconButton>
         </IconsContainer>
       </Header>
       <SearchBar input={searchQuery} onSearch={setSearchQuery} />
-      <SidebarButton onClick={createChat} variant="contained">
+      <SidebarButton
+        onClick={createChat}
+        variant="contained"
+        aria-label="Start a new chat"
+        title="Start a new chat"
+      >
         Start a new chat
       </SidebarButton>
       <ChatListContainer>
@@ -128,10 +162,15 @@ const Header = styled("div")(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
 }));
 
-const UserAvatar = styled(Avatar)(({ theme }) => ({
+const UserAvatar = styled(Avatar)(() => ({
   cursor: "pointer",
   ":hover": {
     opacity: 0.8,
+  },
+  // Add focus styles for better accessibility
+  "&:focus": {
+    outline: "2px solid",
+    outlineOffset: "2px",
   },
 }));
 
@@ -139,12 +178,12 @@ const IconsContainer = styled("div")``;
 
 const SidebarButton = styled(Button)(({ theme }) => ({
   width: "90%",
-  margin: "0 auto",
+  margin: `${theme.spacing(1)} auto`,
   padding: "10px 20px",
   borderRadius: "8px",
 }));
 
-const ChatListContainer = styled("div")(({ theme }) => ({
+const ChatListContainer = styled("div")(() => ({
   flexGrow: 1,
   overflowY: "auto",
 }));

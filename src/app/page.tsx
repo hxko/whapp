@@ -1,4 +1,3 @@
-// src/app/page.tsx
 "use client";
 
 import Sidebar from "@components/Sidebar";
@@ -30,12 +29,12 @@ function Home() {
 }
 
 // Styled components for layout and styling
-const HomeContainer = styled("div")`
-  display: flex;
-  height: 100vh; // Full viewport height
-`;
+const HomeContainer = styled(Box)(() => ({
+  display: "flex",
+  height: "100vh", // Full viewport height
+}));
 
-const SidebarContainer = styled("div")(({ theme }) => ({
+const SidebarContainer = styled(Box)(({ theme }) => ({
   width: 300, // Default width for larger screens
   borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider color
 
@@ -46,7 +45,7 @@ const SidebarContainer = styled("div")(({ theme }) => ({
   },
 }));
 
-const MainContent = styled("div")(({ theme }) => ({
+const MainContent = styled(Box)(({ theme }) => ({
   flex: 1,
   display: "flex",
   alignItems: "center",
@@ -58,9 +57,10 @@ const MainContent = styled("div")(({ theme }) => ({
   },
 }));
 
-const WelcomeMessage = styled("div")(({ theme }) => ({
+const WelcomeMessage = styled(Box)(({ theme }) => ({
   textAlign: "center",
   color: theme.palette.text.secondary, // Use theme color for text
+  padding: theme.spacing(2), // Add padding for better spacing
 }));
 
 export default Home;

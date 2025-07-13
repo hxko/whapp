@@ -22,7 +22,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ input, onSearch }) => {
     <SearchContainer>
       <SearchIcon /> {/* Display the search icon */}
       <SearchInput
-        id="SearchChats"
+        id="search-bar"
         type="text"
         placeholder="Search in chats" // Placeholder text for the input field
         value={input} // Controlled input value
@@ -39,7 +39,6 @@ const SearchContainer = styled("div")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   padding: theme.spacing(1), // Use theme spacing for padding
-  borderRadius: theme.shape.borderRadius, // Use theme shape for border radius
   backgroundColor: theme.palette.background.paper, // Use theme color for background
   boxShadow: theme.shadows[1], // Use theme shadows for a subtle effect
 }));

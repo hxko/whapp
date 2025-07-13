@@ -50,7 +50,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   // Define public routes that do not require authentication
   const publicRoutes = ["/login", "/register", "/forgot-password"];
-  const isPublicRoute = publicRoutes.includes(pathname); // Check if the current route is public
+  const isPublicRoute = publicRoutes.includes(pathname || ""); // Check if the current route is public
 
   useEffect(() => {
     // Subscribe to authentication state changes

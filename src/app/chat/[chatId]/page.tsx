@@ -2,7 +2,6 @@
 "use client";
 
 import React from "react";
-import { useParams } from "next/navigation"; // Use useParams from next/navigation
 import Sidebar from "@components/Sidebar"; // Import the Sidebar component
 import { styled } from "@mui/material/styles"; // Import styled from MUI
 import ChatScreen from "@/components/ChatScreen"; // Import the ChatScreen component
@@ -12,8 +11,6 @@ import ChatScreen from "@/components/ChatScreen"; // Import the ChatScreen compo
  * It includes a sidebar and the chat screen.
  */
 const ChatView: React.FC = () => {
-  const { chatId } = useParams(); // Get the chatId from the URL
-
   return (
     <Container>
       <SidebarContainer>
@@ -49,7 +46,7 @@ const SidebarContainer = styled("div")(({ theme }) => ({
   },
 }));
 
-const ChatContainer = styled("div")(({ theme }) => ({
+const ChatContainer = styled("div")(() => ({
   flex: 1,
   overflow: "scroll", // Enable scrolling
   height: "100vh", // Full viewport height
