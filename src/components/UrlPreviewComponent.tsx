@@ -114,7 +114,9 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
       {/* Display the image if available */}
       {previewData.images && previewData.images.length > 0 && (
         <StyledCardMedia
-          image={previewData.images[0]} // Use the first image for the preview
+          image={`/api/image-proxy?url=${encodeURIComponent(
+            previewData.images[0]
+          )}`} // Use image-proxy/route.ts //  Use the first image for the preview
           title={previewData.title}
           onError={(e: React.SyntheticEvent<HTMLDivElement, Event>) => {
             e.currentTarget.style.display = "none"; // Hide image on error

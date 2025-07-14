@@ -2,9 +2,9 @@ import type { NextConfig } from "next";
 
 const developmentCSP = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com localhost:* 127.0.0.1:* *.localhost:* http://localhost:*;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com localhost:* 127.0.0.1:* *.localhost:* http://localhost:* https://www.gstatic.com;
   style-src 'self' 'unsafe-inline' localhost:* 127.0.0.1:* *.localhost:*;
-  img-src 'self' blob: data: localhost:* 127.0.0.1:* *.localhost:* https://lh3.googleusercontent.com https:;
+  img-src 'self' blob: data: localhost:* 127.0.0.1:* *.localhost:* https://lh3.googleusercontent.com;
   font-src 'self' localhost:* 127.0.0.1:* *.localhost:*;
   object-src 'none';
   base-uri 'self';
@@ -25,9 +25,9 @@ const developmentCSP = `
 
 const productionCSP = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://www.gstatic.com;
+  script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  img-src 'self' blob: data: https://*.vercel.app https://your-domain.com https:;
+  img-src 'self' blob: data: https://*.vercel.app https://your-domain.com;
   font-src 'self' https://fonts.gstatic.com;
   object-src 'none';
   base-uri 'self';
