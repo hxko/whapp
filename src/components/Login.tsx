@@ -28,10 +28,7 @@ const Login = () => {
   return (
     <Container>
       {/* Logo placeholder */}
-      <Logo
-        src="https://www.freeiconspng.com/uploads/logo-whatsapp-png-pic-0.png"
-        alt="WhatsApp Logo"
-      />
+      <Logo src="../../../225464805.png" alt="WhatsApp Logo" />
       <Title>Welcome Back!</Title>
       <Subtitle>Please sign in to continue</Subtitle>
       <Button
@@ -60,11 +57,12 @@ const Container = styled(Box)(({ theme }) => ({
   margin: "auto",
 }));
 
-const Logo = styled("img")`
-  width: 150px;
-  height: auto;
-  margin-bottom: 20px;
-`;
+const Logo = styled("img")(({ theme }) => ({
+  width: "200px",
+  height: "auto",
+  marginBottom: "20px",
+  borderRadius: theme.shape.borderRadius, // Accessing borderRadius from the theme
+}));
 
 const Title = styled(Typography)(({ theme }) => ({
   fontSize: "24px",
