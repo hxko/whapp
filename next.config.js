@@ -110,7 +110,7 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           {
             key: "Cross-Origin-Opener-Policy",
-            value: isDev ? "unsafe-none" : "same-origin",
+            value: isDev ? "unsafe-none" : "same-origin-allow-popups",
           },
           {
             key: "Cross-Origin-Resource-Policy",
