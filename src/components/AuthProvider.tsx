@@ -14,6 +14,7 @@ import { useRouter, usePathname } from "next/navigation"; // Import Next.js navi
 import Loading from "@/components/Loading"; // Import loading component
 import { doc, updateDoc, Timestamp } from "firebase/firestore"; // Import Firestore methods
 import { db } from "../../firebase"; // Import your Firestore instance
+import { getRedirectResult, GoogleAuthProvider } from "firebase/auth";
 
 // Define the shape of the authentication context
 interface AuthContextType {
@@ -53,25 +54,36 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const isPublicRoute = publicRoutes.includes(pathname || ""); // Check if the current route is public
 
   useEffect(() => {
-    // Subscribe to authentication state changes
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user); // Update user state
-      setLoading(false); // Set loading to false
-
-      // Handle navigation based on authentication state
-      if (!user && !isPublicRoute) {
-        router.push("/login"); // Redirect to login if not authenticated
-      } else if (user) {
-        // Update lastSeen timestamp in Firestore when user logs in
-        const userRef = doc(db, "users", user.uid); // Reference to the user document
-        await updateDoc(userRef, {
-          lastSeen: Timestamp.now(), // Update lastSeen to current timestamp
-        });
+    const checkAuth = async () => {
+      try {
+        // Handle login after redirect (only relevant if you use redirect sign-in)
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          setUser(result.user);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error("getRedirectResult error:", err);
       }
-    });
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+      // Fallback: listen to auth state changes
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        setUser(user);
+        setLoading(false);
+
+        if (!user && !isPublicRoute) {
+          router.push("/login");
+        } else if (user) {
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, { lastSeen: Timestamp.now() });
+        }
+      });
+
+      return () => unsubscribe();
+    };
+
+    checkAuth();
   }, [router, isPublicRoute]);
 
   // Function to sign out the user

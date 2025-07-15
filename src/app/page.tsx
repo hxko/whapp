@@ -17,7 +17,7 @@ function Home() {
       <MainContent>
         <WelcomeMessage>
           <Typography variant="h4" component="h1" gutterBottom>
-            Welcome to Chat App
+            Welcome to ChatLink
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Select a chat from the sidebar to start messaging
