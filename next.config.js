@@ -43,7 +43,7 @@ const productionCSP = `
     https://securetoken.googleapis.com
     https://identitytoolkit.googleapis.com;
   worker-src 'self' blob:;
-  child-src 'self';
+  child-src 'self' https://*.firebaseapp.com https://*.google.com https://*.gstatic.com;
   manifest-src 'self';
   media-src 'self' blob: data:;
   upgrade-insecure-requests;
