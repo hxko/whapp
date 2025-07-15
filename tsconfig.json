@@ -34,7 +34,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/chat/chat.js",
-    "src/app/login/login.js"
+    "src/app/login/login.js",
+    "next.config.js"
   ],
   "exclude": ["node_modules"]
 }

@@ -1,5 +1,3 @@
-import type { NextConfig } from "next";
-
 const developmentCSP = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com localhost:* 127.0.0.1:* *.localhost:* http://localhost:* https://www.gstatic.com;
@@ -51,10 +49,13 @@ const productionCSP = `
   upgrade-insecure-requests;
 `;
 
-const nextConfig: NextConfig = {
+const isDev = process.env.NODE_ENV === "development";
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
-    reactRemoveProperties: process.env.NODE_ENV === "production",
+    removeConsole: !isDev,
+    reactRemoveProperties: !isDev,
   },
 
   experimental: {
@@ -89,8 +90,6 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
-    const isDev = process.env.NODE_ENV === "development";
-
     return [
       {
         source: "/(.*)",
@@ -155,4 +154,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
