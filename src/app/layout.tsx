@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import "./globals.css";
 import { Roboto } from "next/font/google";
 import { ThemeContextProvider } from "@components/ThemeContext";
 import CustomThemeProvider from "@components/ThemeProvider";
@@ -12,7 +11,7 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Whatsapp 2.0",
+  title: "Chatlink",
   description: "Build with NextJS",
 };
 

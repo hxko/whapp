@@ -17,6 +17,21 @@ import { Chat } from "../types/types"; // Import the Chat interface
 import { User } from "firebase/auth"; // Import User type from Firebase
 import { Messagetype } from "types/types";
 import { Timestamp } from "firebase/firestore"; // Import Firestore Timestamp
+import CryptoJS from "crypto-js"; // Import the crypto-js library
+
+// Define a secret key for encryption/decryption (this should be securely managed)
+const SECRET_KEY = process.env.CRYPTOKEY as string; // TODO: Replace with a secure key management solution
+
+// Function to encrypt a message
+const encryptMessage = (message: string): string => {
+  return CryptoJS.AES.encrypt(message, SECRET_KEY).toString();
+};
+
+// Function to decrypt a message
+const decryptMessage = (ciphertext: string): string => {
+  const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
 
 // Utility function to get chat by ID
 export const getChatById = async (chatId: string): Promise<Chat | null> => {
@@ -100,7 +115,6 @@ export const chatExists = (
   });
 };
 
-/// Messages
 // Function to send a message
 export const sendMessage = async (
   chatId: string,
@@ -109,9 +123,10 @@ export const sendMessage = async (
 ) => {
   try {
     const messagesRef = collection(db, `chats/${chatId}/messages`);
+    const encryptedText = encryptMessage(text); // Encrypt the message before sending
     await addDoc(messagesRef, {
       sender,
-      text,
+      text: encryptedText, // Store the encrypted message
       timestamp: serverTimestamp(),
     });
   } catch (error) {
@@ -130,10 +145,11 @@ export const fetchMessages = (
     const messages: Messagetype[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
+      const decryptedText = decryptMessage(data.text); // Decrypt the message after receiving
       messages.push({
         id: doc.id,
         sender: data.sender, // Ensure this property exists
-        text: data.text, // Ensure this property exists
+        text: decryptedText, // Use the decrypted message
         timestamp: data.timestamp || Timestamp.now(), // Use current date if null
       });
     });
