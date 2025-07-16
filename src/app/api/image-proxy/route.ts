@@ -29,7 +29,15 @@ export async function GET(req: NextRequest) {
       headers["Origin"] = "https://www.youtube.com";
     }
 
-    const res = await fetch(imageUrl, { headers });
+    // Simple timeout - 30 seconds for YouTube, 15 seconds for others
+    const controller = new AbortController();
+    const timeout = isYouTube ? 30000 : 15000;
+    setTimeout(() => controller.abort(), timeout);
+
+    const res = await fetch(imageUrl, {
+      headers,
+      signal: controller.signal,
+    });
 
     console.log("✅ Fetch status:", res.status);
     console.log("📦 Content-Type:", res.headers.get("content-type"));
@@ -54,6 +62,11 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error("⏰ Request timeout");
+      return new Response("Request timeout", { status: 504 });
+    }
+
     console.error("🔥 Proxy error:", error);
     return new Response("Failed to fetch image", { status: 500 });
   }
