@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       },
-      timeout: 10000, // Wait up to 10 seconds for response
+      timeout: 30000, // Wait up to 30 seconds for response
       followRedirects: "follow", // Follow redirects (important for shortened URLs)
     });
 
@@ -101,6 +101,9 @@ export async function GET(req: NextRequest) {
     // FALLBACK: If link-preview-js fails, we fall back to your original HTML parsing
     // This might happen if the website blocks the library or has unusual formatting
     try {
+      // Also add timeout to the fallback fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -113,7 +116,10 @@ export async function GET(req: NextRequest) {
           Connection: "keep-alive",
           "Upgrade-Insecure-Requests": "1",
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
