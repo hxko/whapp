@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 export async function GET(req: NextRequest) {
   const imageUrl = req.nextUrl.searchParams.get("url");
 
-  console.log("➡️ Proxy request for:", imageUrl); // ← log request
+  console.log("➡️ Proxy request for:", imageUrl);
 
   if (!imageUrl) {
     console.warn("❌ Missing image URL");
@@ -12,13 +12,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(imageUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36",
-        Accept: "image/*",
-      },
-    });
+    // Check if it's a YouTube domain and add appropriate headers
+    const isYouTube =
+      imageUrl.includes("youtube.com") ||
+      imageUrl.includes("ytimg.com") ||
+      imageUrl.includes("ggpht.com");
+
+    const headers: Record<string, string> = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36",
+      Accept: "image/*",
+    };
+
+    if (isYouTube) {
+      headers["Referer"] = "https://www.youtube.com/";
+      headers["Origin"] = "https://www.youtube.com";
+    }
+
+    const res = await fetch(imageUrl, { headers });
 
     console.log("✅ Fetch status:", res.status);
     console.log("📦 Content-Type:", res.headers.get("content-type"));
