@@ -25,7 +25,7 @@ const productionCSP = `
   default-src 'self';
   script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  img-src 'self' blob: data: https://whapp-nine.vercel.app https:;
+  img-src 'self' blob: data: https://whapp-nine.vercel.app;
   font-src 'self' https://fonts.gstatic.com;
   object-src 'none';
   base-uri 'self';

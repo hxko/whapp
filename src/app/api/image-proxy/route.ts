@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=3600",
         "Access-Control-Allow-Origin": "*",
+        "Content-Disposition": "inline", // <- helps browser treat it as displayable image
       },
     });
   } catch (error) {
