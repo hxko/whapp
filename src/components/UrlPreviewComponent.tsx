@@ -113,16 +113,25 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
     <StyledCard onClick={handleCardClick}>
       {/* Display the image if available */}
       {previewData.images && previewData.images.length > 0 && (
-        <StyledCardMedia
-          image={`/api/image-proxy?url=${encodeURIComponent(
+        <Box
+          component="img"
+          src={`/api/image-proxy?url=${encodeURIComponent(
             previewData.images[0]
-          )}`} // Use image-proxy/route.ts //  Use the first image for the preview
-          title={previewData.title}
-          onError={(e: React.SyntheticEvent<HTMLDivElement, Event>) => {
-            e.currentTarget.style.display = "none"; // Hide image on error
+          )}`}
+          alt={previewData.title}
+          sx={{
+            height: 120,
+            width: "100%",
+            objectFit: "cover",
+            display: "block",
+            borderBottom: "1px solid #ccc",
+          }}
+          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+            e.currentTarget.style.display = "none";
           }}
         />
       )}
+
       <CardContent sx={{ position: "relative", paddingBottom: "30px" }}>
         <Box>
           <Typography variant="h6" component="h3" noWrap>
