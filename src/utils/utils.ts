@@ -20,7 +20,7 @@ import { Timestamp } from "firebase/firestore"; // Import Firestore Timestamp
 import CryptoJS from "crypto-js"; // Import the crypto-js library
 
 // Define a secret key for encryption/decryption (this should be securely managed)
-const SECRET_KEY = process.env.CRYPTOKEY as string; // TODO: Replace with a secure key management solution
+const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTOKEY as string; // TODO: Replace with a secure key management solution
 
 // Function to encrypt a message
 const encryptMessage = (message: string): string => {
