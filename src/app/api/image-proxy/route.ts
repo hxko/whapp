@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": contentType,
+        "Content-Length": buffer.byteLength.toString(),
         "Cache-Control": "public, max-age=3600",
         "Access-Control-Allow-Origin": "*",
         "Content-Disposition": "inline", // <- helps browser treat it as displayable image
