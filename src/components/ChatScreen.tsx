@@ -142,19 +142,24 @@ function ChatScreen() {
 
     messages.forEach((msg) => {
       const messageDate = new Date(msg.timestamp.toDate());
-      const diffTime = Math.abs(today.getTime() - messageDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const isToday = messageDate.toDateString() === today.toDateString(); // Check if the message is from today
       let label;
 
       // Determine the label based on how old the message is
-      if (diffDays < 7) {
-        label = messageDate.toLocaleDateString("en-US", { weekday: "long" });
+      if (isToday) {
+        label = "Today"; // Set label to "Today" if the message is from today
       } else {
-        label = messageDate.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
+        const diffTime = Math.abs(today.getTime() - messageDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays < 7) {
+          label = messageDate.toLocaleDateString("en-US", { weekday: "long" });
+        } else {
+          label = messageDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        }
       }
 
       // Group messages by the determined label
@@ -184,12 +189,19 @@ function ChatScreen() {
         <MessageContainer
           className={isCurrentUser(msg) ? "current-user" : "other-user"}
         >
-          <UrlPreviewComponent url={msg.text} timestamp={msg.timestamp} />
+          {chatId && (
+            <UrlPreviewComponent
+              url={msg.text}
+              timestamp={msg.timestamp}
+              chatId={chatId}
+              messageId={msg.id}
+            />
+          )}
         </MessageContainer>
       );
-    } else {
+    } else if (chatId) {
       // Render normal message
-      return <Message message={msg} />;
+      return <Message message={msg} chatId={chatId} />;
     }
   };
 

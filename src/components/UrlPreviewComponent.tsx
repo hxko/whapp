@@ -12,6 +12,9 @@ import { styled } from "@mui/material/styles"; // MUI styling utility
 import MessageTimestamp from "./MessageTimestamp"; // Component to display message timestamp
 import { Timestamp } from "firebase/firestore"; // Firestore Timestamp type
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // Icon for external links
+import DropdownMenu from "@components/MessageDropdownMenu"; // Import the DropdownMenu component
+import DropdownIcon from "@components/DropdownIcon"; // Import the DropdownIcon component
+import { deleteMessage } from "@/utils/utils"; // Import the deleteMessage function
 
 // Define the structure of the preview data
 interface PreviewData {
@@ -25,18 +28,23 @@ interface PreviewData {
 
 // Define the props for the UrlPreviewComponent
 interface UrlPreviewComponentProps {
-  url: string; // URL to preview
-  timestamp: Timestamp; // Timestamp for the message
+  url: string;
+  timestamp: Timestamp;
+  chatId: string;
+  messageId: string;
 }
 
 const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
   url,
   timestamp,
+  chatId,
+  messageId,
 }) => {
   // State variables for managing preview data and loading/error states
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [loading, setLoading] = useState(true); // Indicates if data is being fetched
   const [error, setError] = useState<string | null>(null); // Captures any fetch errors
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // State for dropdown anchor
 
   // Fetch the URL preview data when the URL changes
   useEffect(() => {
@@ -70,7 +78,6 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
   }, [url]); // Dependency array ensures effect runs when URL changes
 
   // Loading state: show a spinner while fetching data
-  // TODO change spinner for consistency
   if (loading) {
     return (
       <StyledCard>
@@ -107,6 +114,27 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
   // Handle card click to open the URL in a new tab
   const handleCardClick = () => {
     window.open(url, "_blank", "noopener,noreferrer"); // Open URL safely
+  };
+
+  // Handle dropdown menu open
+  const handleDropdownOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation(); // Prevent click from propagating to the parent
+    setAnchorEl(event.currentTarget); // Set the anchor element for the dropdown
+  };
+
+  // Handle dropdown menu close
+  const handleDropdownClose = () => {
+    setAnchorEl(null); // Reset the anchor element
+  };
+
+  // Handle delete action
+  const handleDelete = async () => {
+    try {
+      await deleteMessage(chatId, messageId);
+      handleDropdownClose();
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
   };
 
   return (
@@ -154,6 +182,8 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
               <OpenInNewIcon fontSize="small" sx={{ ml: 0.5 }} />{" "}
               {/* Icon for external link */}
             </Box>
+            <DropdownIcon onClick={handleDropdownOpen} />{" "}
+            {/* Use the DropdownIcon component */}
           </Box>
         </Box>
         <TimestampContainer>
@@ -161,6 +191,12 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
           {/* Display the message timestamp */}
         </TimestampContainer>
       </CardContent>
+      <DropdownMenu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleDropdownClose}
+        onDelete={handleDelete}
+      />
     </StyledCard>
   );
 };
@@ -174,6 +210,9 @@ const StyledCard = styled(Card)(({ theme }) => ({
   "&:hover": {
     boxShadow: theme.shadows[4], // Elevate card on hover
     transform: "translateY(-2px)", // Slightly lift the card
+    "& .MuiButtonBase-root": {
+      opacity: 1, // Show the dropdown icon on hover
+    },
   },
 }));
 

@@ -35,7 +35,7 @@ const HomeContainer = styled(Box)(() => ({
 }));
 
 const SidebarContainer = styled(Box)(({ theme }) => ({
-  width: 300, // Default width for larger screens
+  width: 400, // Default width for larger screens
   borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider color
 
   // Responsive styles

@@ -3,6 +3,7 @@ import {
   collection,
   getDoc,
   doc,
+  deleteDoc,
   getDocs,
   query,
   where,
@@ -155,4 +156,15 @@ export const fetchMessages = (
     });
     setMessages(messages);
   });
+};
+
+// Function to delete a message
+export const deleteMessage = async (chatId: string, messageId: string) => {
+  try {
+    const messageRef = doc(db, `chats/${chatId}/messages`, messageId); // Reference to the message document
+    await deleteDoc(messageRef); // Delete the message document
+    console.log("Message deleted successfully");
+  } catch (error) {
+    console.error("Error deleting message: ", error);
+  }
 };

@@ -24,5 +24,5 @@ const TimestampContainer = styled("div")(({ theme }) => ({
   fontSize: "12px",
   color: theme.palette.text.secondary, // Use the theme's secondary text color
   alignSelf: "flex-end", // Align timestamp to the bottom right
-  marginTop: "5px", // Add some space above the timestamp
+  marginBottom: "-6px", // Add some space above the timestamp
 }));

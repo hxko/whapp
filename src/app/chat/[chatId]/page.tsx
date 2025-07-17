@@ -37,7 +37,7 @@ const Container = styled("div")(({ theme }) => ({
 }));
 
 const SidebarContainer = styled("div")(({ theme }) => ({
-  width: 300, // Default width for larger screens
+  width: 400, // Default width for larger screens
   borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider color
 
   // Hide sidebar on small screens
