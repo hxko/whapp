@@ -120,11 +120,16 @@ export async function GET(req: NextRequest) {
       }
 
       const htmlContent = await response.text();
-      // Log truncated content (to avoid huge logs)
-      console.log("Fetched HTML (truncated):", htmlContent.slice(0, 1000));
-      // Use your existing HTML parser as backup
+      // Detect YouTube fallback
+      if (htmlContent.includes("<title>YouTube</title>")) {
+        console.error(
+          "Fallback page detected. YouTube likely blocked this request."
+        );
+      }
+
+      console.error("TRUNCATED HTML:", htmlContent.slice(0, 800)); // This will force logs to appear
       const previewData = parseHtmlForPreview(htmlContent, url);
-      console.log("link-preview-js result:", previewData);
+      console.error("link-preview-js result:", previewData);
       return NextResponse.json(previewData, {
         status: 200,
         headers: {
