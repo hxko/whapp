@@ -31,7 +31,7 @@ const Container = styled("div")(({ theme }) => ({
   height: "100vh", // Full viewport height
 
   // Responsive styles for small screens
-  [theme.breakpoints.down("sm")]: {
+  [theme.breakpoints.down("md")]: {
     flexDirection: "column", // Stack elements vertically on small screens
   },
 }));
@@ -41,7 +41,7 @@ const SidebarContainer = styled("div")(({ theme }) => ({
   borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider color
 
   // Hide sidebar on small screens
-  [theme.breakpoints.down("sm")]: {
+  [theme.breakpoints.down("md")]: {
     display: "none",
   },
 }));

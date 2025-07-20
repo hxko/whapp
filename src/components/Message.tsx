@@ -41,18 +41,25 @@ const Message = ({
   return (
     <Container>
       <MessageText isSender={isSender}>
-        <Typography variant="body1">{message.text}</Typography>{" "}
-        {/* Display the message text */}
-        <MessageTimestamp timestamp={message.timestamp} />{" "}
-        {/* Display the message timestamp */}
-        {isSender && ( // Show icon only for sender messages
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            overflowWrap: "break-word",
+            wordBreak: "break-word",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          <Typography variant="body1">{message.text}</Typography>
+        </Box>
+        <MessageTimestamp timestamp={message.timestamp} />
+        {isSender && (
           <DropdownIcon
             size="small"
             onClick={handleClick}
-            className="dropdown-icon" // Add a class for styling
+            className="dropdown-icon"
           >
-            <KeyboardArrowDownRoundedIcon fontSize="small" />{" "}
-            {/* Make the icon smaller */}
+            <KeyboardArrowDownRoundedIcon fontSize="small" />
           </DropdownIcon>
         )}
       </MessageText>
@@ -69,35 +76,40 @@ export default Message;
 
 // Styled component for messages sent by the user
 const Sender = styled(Box)(({ theme }) => ({
-  alignSelf: "flex-end", // Align sender messages to the right
-  maxWidth: "70%", // Limit the maximum width of the message bubble
-  margin: "10px 0", // Add vertical margin between messages
-  position: "relative", // Position relative for absolute positioning of the icon
+  alignSelf: "flex-end",
+  margin: "10px 0",
+  position: "relative",
+  width: "100%", // Default to full width
+  [theme.breakpoints.up("lg")]: {
+    maxWidth: "70%", // Apply 70% width on small screens and up
+  },
   "&:hover .dropdown-icon": {
-    display: "block", // Show icon on hover
+    display: "block",
   },
 }));
 
 // Styled component for messages received from others
 const Recipient = styled(Box)(({ theme }) => ({
-  alignSelf: "flex-start", // Align recipient messages to the left
-  maxWidth: "70%", // Limit the maximum width of the message bubble
-  margin: "10px 0", // Add vertical margin between messages
-  position: "relative", // Position relative for absolute positioning of the icon
+  alignSelf: "flex-start",
+  margin: "10px 0",
+  position: "relative",
+  width: "100%",
+  [theme.breakpoints.up("lg")]: {
+    maxWidth: "70%",
+  },
   "&:hover .dropdown-icon": {
-    display: "block", // Show icon on hover
+    display: "block",
   },
 }));
 
-// Styled component for the message text container
 const MessageText = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "isSender", // Prevent the isSender prop from being forwarded to the DOM
+  shouldForwardProp: (prop) => prop !== "isSender",
 })<{ isSender: boolean }>(({ theme, isSender }) => ({
   display: "flex",
-  flexDirection: "row",
-  gap: 6,
+  alignItems: "flex-end", // Align timestamp and text bottom-aligned
   justifyContent: "space-between",
-  padding: theme.spacing(1), // Use theme spacing
+  gap: 6,
+  padding: theme.spacing(1),
   borderRadius: "10px",
   backgroundColor: isSender
     ? theme.palette.mode === "dark"
@@ -106,11 +118,9 @@ const MessageText = styled(Box, {
     : theme.palette.mode === "dark"
     ? theme.palette.grey[800]
     : theme.palette.common.white,
-  boxShadow: theme.shadows[1], // Use theme shadows
-  position: "relative", // Position relative for absolute positioning of timestamp
-  wordWrap: "break-word",
-  overflowWrap: "break-word", // Ensure that long words break correctly
-  whiteSpace: "pre-wrap", // Preserve whitespace and wrap text
+  boxShadow: theme.shadows[1],
+  position: "relative",
+  maxWidth: "100%",
 }));
 
 // Styled component for the dropdown icon

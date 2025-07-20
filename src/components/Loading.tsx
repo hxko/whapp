@@ -30,7 +30,7 @@ const Loading = () => {
   return (
     <LoadingContainer>
       <CircularProgress size={50} color="primary" />
-      <Typography variant="h6" sx={{ marginTop: 2, color: "#333" }}>
+      <Typography variant="h6" sx={{ marginTop: 2 }}>
         Loading...
       </Typography>
     </LoadingContainer>

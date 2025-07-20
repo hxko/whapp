@@ -39,7 +39,7 @@ const SidebarContainer = styled(Box)(({ theme }) => ({
   borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider color
 
   // Responsive styles
-  [theme.breakpoints.down("sm")]: {
+  [theme.breakpoints.down("md")]: {
     width: "100%", // Set width to 100% on small screens
     borderRight: "none", // Remove border on small screens
   },
@@ -52,7 +52,7 @@ const MainContent = styled(Box)(({ theme }) => ({
   justifyContent: "center",
 
   // Hide MainContent on small screens
-  [theme.breakpoints.down("sm")]: {
+  [theme.breakpoints.down("md")]: {
     display: "none",
   },
 }));

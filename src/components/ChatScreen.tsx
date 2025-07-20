@@ -368,11 +368,12 @@ const StyledChip = styled(Chip)(({ theme }) => ({
   fontWeight: 500, // Slightly bolder text for better readability
 }));
 
-const BackButton = styled(IconButton)`
-  @media (min-width: 601px) {
-    display: none; // Hide on larger screens
-  }
-`;
+const BackButton = styled(IconButton)(({ theme }) => ({
+  display: "inline-flex", // Show by default
+  [theme.breakpoints.up("md")]: {
+    display: "none", // Hide on large screens and up
+  },
+}));
 
 // Simple message container that mimics the Message component's alignment behavior
 const MessageContainer = styled(Box)(({ theme }) => ({
