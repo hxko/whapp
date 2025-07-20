@@ -4,7 +4,7 @@
 import React from "react";
 import Sidebar from "@components/Sidebar"; // Import the Sidebar component
 import { styled } from "@mui/material/styles"; // Import styled from MUI
-import ChatScreen from "@/components/ChatScreen"; // Import the ChatScreen component
+import ChatScreen from "@components/ChatScreen"; // Import the ChatScreen component
 
 /**
  * ChatView component displays the chat interface for a specific chat.

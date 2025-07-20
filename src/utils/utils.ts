@@ -12,9 +12,10 @@ import {
   onSnapshot,
   orderBy,
 } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../../firebase"; // Import your Firestore instance
 import EmailValidator from "email-validator"; // Import email validation library
-import { Chat } from "../types/types"; // Import the Chat interface
+import { Chat, Attachment } from "../types/types"; // Import the Chat interface and Attachment
 import { User } from "firebase/auth"; // Import User type from Firebase
 import { Messagetype } from "types/types";
 import { Timestamp } from "firebase/firestore"; // Import Firestore Timestamp
@@ -32,6 +33,32 @@ const encryptMessage = (message: string): string => {
 const decryptMessage = (ciphertext: string): string => {
   const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
   return bytes.toString(CryptoJS.enc.Utf8);
+};
+
+// Function to upload file to Firebase Storage
+export const uploadFile = async (
+  file: File
+): Promise<{
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+}> => {
+  try {
+    const storage = getStorage();
+    const fileRef = ref(storage, `chatAttachments/${Date.now()}-${file.name}`);
+    const snapshot = await uploadBytes(fileRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return {
+      fileUrl: downloadURL,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+    };
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
 };
 
 // Utility function to get chat by ID
@@ -120,31 +147,33 @@ export const chatExists = (
 export const sendMessage = async (
   chatId: string,
   sender: string,
-  text: string
+  text: string,
+  attachment?: Attachment
 ) => {
   try {
     const messagesRef = collection(db, `chats/${chatId}/messages`);
     const encryptedText = encryptMessage(text); // Encrypt the message before sending
-    await addDoc(messagesRef, {
+    const msgData: any = {
       sender,
       text: encryptedText, // Store the encrypted message
       timestamp: serverTimestamp(),
-    });
+    };
+    if (attachment) {
+      msgData.attachment = attachment;
+    }
+    await addDoc(messagesRef, msgData);
   } catch (error) {
     console.error("Error sending message: ", error);
   }
 };
 
 // Function to fetch messages
-export const fetchMessages = (
-  chatId: string,
-  setMessages: React.Dispatch<React.SetStateAction<Messagetype[]>>
-) => {
+export const fetchMessages = (chatId: string, setMessages: any) => {
   const messagesRef = collection(db, `chats/${chatId}/messages`);
   const q = query(messagesRef, orderBy("timestamp"));
-  return onSnapshot(q, (querySnapshot) => {
+  return onSnapshot(q, (querySnapshot: any) => {
     const messages: Messagetype[] = [];
-    querySnapshot.forEach((doc) => {
+    querySnapshot.forEach((doc: any) => {
       const data = doc.data();
       const decryptedText = decryptMessage(data.text); // Decrypt the message after receiving
       messages.push({
@@ -152,6 +181,7 @@ export const fetchMessages = (
         sender: data.sender, // Ensure this property exists
         text: decryptedText, // Use the decrypted message
         timestamp: data.timestamp || Timestamp.now(), // Use current date if null
+        attachment: data.attachment || undefined, // Include attachment if it exists
       });
     });
     setMessages(messages);

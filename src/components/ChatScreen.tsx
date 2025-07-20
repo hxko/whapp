@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
-import { sendMessage, fetchMessages } from "@utils/utils";
+import { sendMessage, fetchMessages, uploadFile } from "@utils/utils";
 import { useParams } from "next/navigation";
 import { styled, useTheme } from "@mui/material/styles";
 import {
@@ -45,8 +45,10 @@ function ChatScreen() {
   const [messages, setMessages] = useState<Messagetype[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch chat partner data
   const {
@@ -126,6 +128,38 @@ function ChatScreen() {
     router.push("/");
   };
 
+  // Handle file attachment
+  const handleAttachFile = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handle file selection and upload
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file && chatId && user?.email) {
+      setUploading(true);
+      try {
+        // Upload file and get attachment metadata
+        const attachment = await uploadFile(file);
+        // Send a message with the attachment
+        await sendMessage(chatId, user.email, "", attachment);
+      } catch (error) {
+        console.error("File upload error:", error);
+        // You could add a toast notification here for better UX
+      } finally {
+        setUploading(false);
+        // Reset the file input value
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+    }
+  };
+
   // Loading and error states for chat partner
   if (partnerLoading) {
     return <Box>Loading chat partner...</Box>;
@@ -183,7 +217,70 @@ function ChatScreen() {
   const renderMessageContent = (msg: Messagetype) => {
     const isUrl = isValidUrl(msg.text);
 
-    if (isUrl) {
+    if (msg.attachment) {
+      // Render attachment preview
+      return (
+        <MessageContainer
+          className={isCurrentUser(msg) ? "current-user" : "other-user"}
+        >
+          <Box
+            sx={{
+              padding: "12px",
+              borderRadius: "12px",
+              backgroundColor: theme.palette.background.paper,
+              boxShadow: 1,
+              marginBottom: 1,
+              maxWidth: "300px",
+            }}
+          >
+            {msg.attachment.fileType.startsWith("image/") ? (
+              <img
+                src={msg.attachment.fileUrl}
+                alt={msg.attachment.fileName}
+                style={{
+                  maxWidth: "100%",
+                  borderRadius: "8px",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: "bold", marginBottom: 1 }}
+                >
+                  {msg.attachment.fileName}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ marginBottom: 2, display: "block" }}
+                >
+                  {msg.attachment.fileType} •{" "}
+                  {(msg.attachment.fileSize / 1024).toFixed(1)} KB
+                </Typography>
+                <Box sx={{ marginTop: 1 }}>
+                  <Typography
+                    component="a"
+                    href={msg.attachment.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      textDecoration: "underline",
+                      color: theme.palette.primary.main,
+                      cursor: "pointer",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    Download File
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </MessageContainer>
+      );
+    } else if (isUrl) {
       // Render URL preview if the message is a URL
       return (
         <MessageContainer
@@ -229,7 +326,7 @@ function ChatScreen() {
           </Box>
           <Box flexGrow={1} />
           <IconContainer>
-            <IconButton>
+            <IconButton onClick={handleAttachFile} disabled={uploading}>
               <AttachFile />
             </IconButton>
             <IconButton>
@@ -283,6 +380,36 @@ function ChatScreen() {
         <EmojiPickerContainer ref={emojiPickerRef}>
           <Picker data={data} onEmojiSelect={handleEmojiSelect} />
         </EmojiPickerContainer>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+        accept="*/*"
+      />
+
+      {/* Upload status indicator */}
+      {uploading && (
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: "100px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: theme.palette.background.paper,
+            padding: "8px 16px",
+            borderRadius: "20px",
+            boxShadow: 2,
+            zIndex: 1000,
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            Uploading file...
+          </Typography>
+        </Box>
       )}
     </Container>
   );
