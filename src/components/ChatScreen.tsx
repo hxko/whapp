@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
-import { sendMessage, fetchMessages } from "@utils/utils";
+import { sendMessage, fetchMessages, replyToMessage } from "@utils/utils";
 import { useParams } from "next/navigation";
 import { styled, useTheme } from "@mui/material/styles";
 import {
@@ -27,10 +27,11 @@ import OutlinedInput from "@mui/material/OutlinedInput";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import UrlPreviewComponent from "@/components/UrlPreviewComponent";
+import ReplyMessage from "./ReplyMessage";
 
 // Define the type for URL parameters
 export type Params = {
-  chatId?: string;
+  chatId: string;
 };
 
 function ChatScreen() {
@@ -47,6 +48,7 @@ function ChatScreen() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
+  const [replyMessage, setReplyMessage] = useState<Messagetype | null>(null); // State to hold the message being replied to
 
   // Fetch chat partner data
   const {
@@ -95,12 +97,22 @@ function ChatScreen() {
     };
   }, [showEmojiPicker]);
 
-  // Send a new message
   const handleSendMessage = async () => {
     if (newMessage.trim() && chatId) {
       const senderEmail = user?.email;
       if (senderEmail) {
-        await sendMessage(chatId, senderEmail, newMessage);
+        // If replying to a message, include reply information
+        if (replyMessage) {
+          await replyToMessage(
+            chatId,
+            replyMessage.id,
+            newMessage,
+            senderEmail
+          );
+          setReplyMessage(null); // Clear the reply message after sending
+        } else {
+          await sendMessage(chatId, senderEmail, newMessage);
+        }
         setNewMessage(""); // Clear the input field after sending
       } else {
         console.error("User  is not logged in or email is not available.");
@@ -134,6 +146,10 @@ function ChatScreen() {
   if (partnerError) {
     return <Box>Error loading chat partner: {partnerError}</Box>;
   }
+  // reply to a message
+  const handleReply = (message: Messagetype) => {
+    setReplyMessage(message); // Set the message to reply to
+  };
 
   // Group messages by date for better organization
   const groupMessagesByDate = (messages: Messagetype[]) => {
@@ -179,29 +195,22 @@ function ChatScreen() {
     return message.sender === user?.email;
   };
 
-  // Helper function to render message content
-  const renderMessageContent = (msg: Messagetype) => {
+  const renderMessageBody = (msg: Messagetype) => {
     const isUrl = isValidUrl(msg.text);
+    console.log("Rendering message:", msg.text, "Is URL:", isUrl);
 
-    if (isUrl) {
-      // Render URL preview if the message is a URL
+    if (isUrl && chatId) {
       return (
-        <MessageContainer
-          className={isCurrentUser(msg) ? "current-user" : "other-user"}
-        >
-          {chatId && (
-            <UrlPreviewComponent
-              url={msg.text}
-              timestamp={msg.timestamp}
-              chatId={chatId}
-              messageId={msg.id}
-            />
-          )}
-        </MessageContainer>
+        <UrlPreviewComponent
+          url={msg.text}
+          timestamp={msg.timestamp}
+          chatId={chatId}
+          messageId={msg.id}
+          onReply={handleReply}
+        />
       );
-    } else if (chatId) {
-      // Render normal message
-      return <Message message={msg} chatId={chatId} />;
+    } else {
+      return <Typography>{msg.text}</Typography>;
     }
   };
 
@@ -240,18 +249,64 @@ function ChatScreen() {
       </AppBar>
 
       {/* Message list */}
+
+      {/* Message list */}
       <MessageList ref={messageListRef}>
         {Object.entries(groupedMessages).map(([label, msgs]) => (
           <LabelContainer key={label}>
             <StyledChip label={label} variant="filled" />
-            {msgs.map((msg) => (
-              <React.Fragment key={msg.id}>
-                {renderMessageContent(msg)}
-              </React.Fragment>
-            ))}
+            {msgs.map((msg) => {
+              // Only render top-level messages (i.e., not replies)
+              if (msg.replyTo) return null;
+
+              const replies = messages.filter((m) => m.replyTo === msg.id);
+              const isUrl = isValidUrl(msg.text);
+
+              return (
+                <React.Fragment key={msg.id}>
+                  {/* Render URL preview or regular message */}
+                  {isUrl && chatId ? (
+                    <MessageContainer
+                      className={
+                        isCurrentUser(msg) ? "current-user" : "other-user"
+                      }
+                    >
+                      <UrlPreviewComponent
+                        url={msg.text}
+                        timestamp={msg.timestamp}
+                        chatId={chatId}
+                        messageId={msg.id}
+                        onReply={handleReply}
+                      />
+                    </MessageContainer>
+                  ) : (
+                    <Message
+                      message={msg}
+                      chatId={chatId!}
+                      onReply={handleReply}
+                    />
+                  )}
+
+                  {/* Render replies */}
+                  {replies.map((reply) => (
+                    <Box key={reply.id} sx={{ pl: 4 }}>
+                      <ReplyMessage
+                        message={reply}
+                        renderBody={renderMessageBody}
+                      />
+                    </Box>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </LabelContainer>
         ))}
       </MessageList>
+
+      {/* Render the reply message if it exists */}
+      {replyMessage && (
+        <ReplyMessage message={replyMessage} renderBody={renderMessageBody} />
+      )}
 
       {/* Input area for new messages */}
       <InputContainer>
