@@ -7,12 +7,13 @@ import {
   Typography,
   Link,
   CircularProgress,
+  Menu,
+  MenuItem,
 } from "@mui/material"; // MUI components for UI elements
 import { styled } from "@mui/material/styles"; // MUI styling utility
 import MessageTimestamp from "./MessageTimestamp"; // Component to display message timestamp
 import { Timestamp } from "firebase/firestore"; // Firestore Timestamp type
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // Icon for external links
-import DropdownMenu from "@components/MessageDropdownMenu"; // Import the DropdownMenu component
 import DropdownIcon from "@components/DropdownIcon"; // Import the DropdownIcon component
 import { deleteMessage } from "@/utils/utils"; // Import the deleteMessage function
 
@@ -32,6 +33,7 @@ interface UrlPreviewComponentProps {
   timestamp: Timestamp;
   chatId: string;
   messageId: string;
+  onReply?: (message: any) => void; // Keep onReply to accept the constructed message
 }
 
 const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
@@ -39,6 +41,7 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
   timestamp,
   chatId,
   messageId,
+  onReply,
 }) => {
   // State variables for managing preview data and loading/error states
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
@@ -48,6 +51,7 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
 
   // Fetch the URL preview data when the URL changes
   useEffect(() => {
+    console.log("UrlPreviewComponent useEffect triggered for:", url);
     const fetchPreview = async () => {
       try {
         setLoading(true); // Set loading state to true while fetching
@@ -123,15 +127,32 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
   };
 
   // Handle dropdown menu close
-  const handleDropdownClose = () => {
+  const handleClose = () => {
     setAnchorEl(null); // Reset the anchor element
   };
 
+  // Handle reply action
+  const handleReply = (event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent click from propagating to the parent container
+    if (onReply) {
+      // Construct a message-like object from the available props
+      const messageForReply = {
+        id: messageId,
+        text: url,
+        timestamp: timestamp,
+        // Add any other properties your handleReply function expects
+      };
+      onReply(messageForReply);
+    }
+    handleClose(); // Close the menu
+  };
+
   // Handle delete action
-  const handleDelete = async () => {
+  const handleDelete = async (event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent click from propagating to the parent container
     try {
       await deleteMessage(chatId, messageId);
-      handleDropdownClose();
+      handleClose();
     } catch (error) {
       console.error("Error deleting message:", error);
     }
@@ -191,12 +212,12 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
           {/* Display the message timestamp */}
         </TimestampContainer>
       </CardContent>
-      <DropdownMenu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleDropdownClose}
-        onDelete={handleDelete}
-      />
+
+      {/* Dropdown menu for delete and reply options */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+        <MenuItem onClick={handleReply}>Reply</MenuItem>
+        <MenuItem onClick={handleDelete}>Delete</MenuItem>
+      </Menu>
     </StyledCard>
   );
 };

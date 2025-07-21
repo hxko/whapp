@@ -10,4 +10,5 @@ export type Messagetype = {
   sender: string; // Email of the sender
   text: string; // Message content
   timestamp: Timestamp; // Timestamp of when the message was sent
+  replyTo?: string; // Optional ID of the message being replied to
 };

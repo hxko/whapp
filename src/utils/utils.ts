@@ -152,6 +152,7 @@ export const fetchMessages = (
         sender: data.sender, // Ensure this property exists
         text: decryptedText, // Use the decrypted message
         timestamp: data.timestamp || Timestamp.now(), // Use current date if null
+        replyTo: data.replyTo || null,
       });
     });
     setMessages(messages);
@@ -166,5 +167,26 @@ export const deleteMessage = async (chatId: string, messageId: string) => {
     console.log("Message deleted successfully");
   } catch (error) {
     console.error("Error deleting message: ", error);
+  }
+};
+
+export const replyToMessage = async (
+  chatId: string,
+  messageId: string,
+  replyMessage: string,
+  sender: string
+) => {
+  try {
+    const messagesRef = collection(db, `chats/${chatId}/messages`);
+    const encryptedText = encryptMessage(replyMessage); // Encrypt the reply message
+    await addDoc(messagesRef, {
+      sender,
+      text: encryptedText, // Store the encrypted reply message
+      timestamp: serverTimestamp(),
+      replyTo: messageId, // Reference to the original message being replied to
+    });
+    console.log(`Replied to message ${messageId} in chat ${chatId}`);
+  } catch (error) {
+    console.error("Error replying to message: ", error);
   }
 };

@@ -1,26 +1,29 @@
-import React from "react"; // Import React
+import React, { useState } from "react"; // Import React and useState
 import { styled } from "@mui/material/styles"; // Import styled utility from MUI
 import { Messagetype } from "@/types/types"; // Import the message type definition
 import { useAuth } from "@/components/AuthProvider"; // Import authentication context
 import MessageTimestamp from "./MessageTimestamp"; // Import the timestamp component
 import { Box, Typography, Menu, MenuItem, IconButton } from "@mui/material"; // Import MUI components
-import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded"; // Import the icon
 import { deleteMessage } from "@/utils/utils"; // Import the deleteMessage function
+import DropdownIcon from "@components/DropdownIcon"; // Import DropdownIcon
+import ReplyMessage from "./ReplyMessage"; // Import ReplyMessage
 
 // Message component to display individual messages
 const Message = ({
   message,
   chatId,
+  onReply, // Add onReply prop
 }: {
   message: Messagetype;
   chatId: string;
+  onReply: (message: Messagetype) => void; // Function to handle reply
 }) => {
   const { user } = useAuth(); // Get the current user from authentication context
   const isSender = message.sender === user?.email; // Determine if the current user is the sender
   const Container = isSender ? Sender : Recipient; // Choose the appropriate container based on sender status
 
   // State for dropdown menu
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null); // State for dropdown menu anchor
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // State for dropdown menu anchor
 
   // Handle opening the dropdown menu
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -38,6 +41,12 @@ const Message = ({
     handleClose(); // Close the menu after deletion
   };
 
+  // Handle reply action
+  const handleReply = () => {
+    onReply(message); // Call the onReply function passed as a prop
+    handleClose(); // Close the menu after replying
+  };
+
   return (
     <Container>
       <MessageText isSender={isSender}>
@@ -52,20 +61,15 @@ const Message = ({
         >
           <Typography variant="body1">{message.text}</Typography>
         </Box>
-        <MessageTimestamp timestamp={message.timestamp} />
-        {isSender && (
-          <DropdownIcon
-            size="small"
-            onClick={handleClick}
-            className="dropdown-icon"
-          >
-            <KeyboardArrowDownRoundedIcon fontSize="small" />
-          </DropdownIcon>
-        )}
+        <TimestampContainer className="timestamp">
+          <MessageTimestamp timestamp={message.timestamp} />
+        </TimestampContainer>
+        {isSender && <DropdownIcon onClick={handleClick} />}
       </MessageText>
 
-      {/* Dropdown menu for delete option */}
+      {/* Dropdown menu for delete and reply options */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+        <MenuItem onClick={handleReply}>Reply</MenuItem>
         <MenuItem onClick={handleDelete}>Delete</MenuItem>
       </Menu>
     </Container>
@@ -83,8 +87,8 @@ const Sender = styled(Box)(({ theme }) => ({
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%", // Apply 70% width on small screens and up
   },
-  "&:hover .dropdown-icon": {
-    display: "block",
+  "&:hover .MuiIconButton-root": {
+    opacity: 1, // Show icon on hover
   },
 }));
 
@@ -96,9 +100,6 @@ const Recipient = styled(Box)(({ theme }) => ({
   width: "100%",
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
-  },
-  "&:hover .dropdown-icon": {
-    display: "block",
   },
 }));
 
@@ -121,22 +122,12 @@ const MessageText = styled(Box, {
   boxShadow: theme.shadows[1],
   position: "relative",
   maxWidth: "100%",
+  "&:hover .timestamp": {
+    opacity: 0, // Hide timestamp on hover
+  },
 }));
 
-// Styled component for the dropdown icon
-const DropdownIcon = styled(IconButton)(({ theme }) => ({
-  display: "none", // Hide by default
-  position: "absolute",
-  right: 3, // Adjust position as needed
-  top: 3, // Adjust position as needed for smaller size
-  width: theme.spacing(2), // Set a fixed width for the button
-  height: theme.spacing(2), // Set a fixed height for the button
-  padding: 0, // Remove padding
-  "&:hover": {
-    backgroundColor: theme.palette.action.hover, // Change background on hover
-    borderRadius: "50%", // Make it circular
-  },
-  "& .MuiSvgIcon-root": {
-    fontSize: "1rem", // Set the icon size
-  },
-}));
+const TimestampContainer = styled(Box)({
+  opacity: 1, // Default opacity
+  transition: "opacity 0.2s ease-in-out", // Smooth transition for visibility
+});
