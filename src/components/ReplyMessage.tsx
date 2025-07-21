@@ -1,30 +1,69 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { Messagetype } from "types/types";
+import MessageTimestamp from "./MessageTimestamp";
+import { styled } from "@mui/material/styles";
+
+interface ReplyMessageProps {
+  message: Messagetype;
+  renderBody: (msg: Messagetype) => React.ReactNode;
+  isOriginalSender?: boolean;
+}
 
 const ReplyMessage = ({
   message,
   renderBody,
-}: {
-  message: Messagetype;
-  renderBody: (msg: Messagetype) => React.ReactNode;
-}) => {
+  isOriginalSender = false,
+}: ReplyMessageProps) => {
+  const theme = useTheme();
+
   return (
-    <Box sx={{ pl: 2, pt: 1 }}>
-      <Box
-        sx={{
-          borderLeft: "4px solid #ccc",
-          padding: "8px",
-          borderRadius: "4px",
-        }}
-      >
-        <Typography variant="caption" color="textSecondary">
+    <ReplyContainer isOriginalSender={isOriginalSender}>
+      <ReplyContent isOriginalSender={isOriginalSender}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontWeight: 500 }}
+        >
           {message.sender}
         </Typography>
-        {renderBody(message)}
-      </Box>
-    </Box>
+
+        <MessageContainer>
+          <Box sx={{ pr: 5 }}>{renderBody(message)}</Box>
+          <TimestampContainer>
+            <MessageTimestamp timestamp={message.timestamp} />
+          </TimestampContainer>
+        </MessageContainer>
+      </ReplyContent>
+    </ReplyContainer>
   );
 };
+
+// Styled components
+const ReplyContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "isOriginalSender",
+})<{ isOriginalSender: boolean }>(({ theme, isOriginalSender }) => ({
+  alignSelf: isOriginalSender ? "flex-end" : "flex-start",
+  paddingLeft: theme.spacing(2),
+  paddingTop: theme.spacing(0.5),
+  width: "70%",
+}));
+
+const ReplyContent = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "isOriginalSender",
+})<{ isOriginalSender: boolean }>(({ theme, isOriginalSender }) => ({
+  borderLeft: `3px solid ${theme.palette.divider}`,
+  paddingLeft: theme.spacing(1.5),
+}));
+
+const MessageContainer = styled(Box)({
+  position: "relative",
+});
+
+const TimestampContainer = styled(Box)({
+  position: "absolute",
+  right: 8,
+  bottom: 0,
+});
 
 export default ReplyMessage;

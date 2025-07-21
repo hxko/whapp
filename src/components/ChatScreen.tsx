@@ -288,14 +288,23 @@ function ChatScreen() {
                   )}
 
                   {/* Render replies */}
-                  {replies.map((reply) => (
-                    <Box key={reply.id} sx={{ pl: 4 }}>
+                  {replies.map((reply) => {
+                    const originalMessage = messages.find(
+                      (m) => m.id === reply.replyTo
+                    );
+                    const isOriginalSender = originalMessage
+                      ? isCurrentUser(originalMessage)
+                      : false;
+
+                    return (
                       <ReplyMessage
+                        key={reply.id}
                         message={reply}
                         renderBody={renderMessageBody}
+                        isOriginalSender={isOriginalSender}
                       />
-                    </Box>
-                  ))}
+                    );
+                  })}
                 </React.Fragment>
               );
             })}
