@@ -64,7 +64,9 @@ const Message = ({
         <TimestampContainer className="timestamp">
           <MessageTimestamp timestamp={message.timestamp} />
         </TimestampContainer>
-        {isSender && <DropdownIcon onClick={handleClick} />}
+        {/* TODO: Conditionally render menu for Sender or Recipient. Dont show delete if Recipient Message. */}
+        {/* TODO: Check if replies getting deleted when message gets deleted */}
+        <DropdownIcon onClick={handleClick} />
       </MessageText>
 
       {/* Dropdown menu for delete and reply options */}
@@ -100,6 +102,9 @@ const Recipient = styled(Box)(({ theme }) => ({
   width: "100%",
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
+  },
+  "&:hover .MuiIconButton-root": {
+    opacity: 1, // Show icon on hover
   },
 }));
 

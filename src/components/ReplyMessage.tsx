@@ -44,16 +44,20 @@ const ReplyContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "isOriginalSender",
 })<{ isOriginalSender: boolean }>(({ theme, isOriginalSender }) => ({
   alignSelf: isOriginalSender ? "flex-end" : "flex-start",
-  paddingLeft: theme.spacing(2),
-  paddingTop: theme.spacing(0.5),
-  width: "70%",
+  width: "100%",
+  [theme.breakpoints.up("lg")]: {
+    maxWidth: "70%",
+  },
 }));
 
 const ReplyContent = styled(Box, {
   shouldForwardProp: (prop) => prop !== "isOriginalSender",
 })<{ isOriginalSender: boolean }>(({ theme, isOriginalSender }) => ({
   borderLeft: `3px solid ${theme.palette.divider}`,
+  padding: theme.spacing(1),
   paddingLeft: theme.spacing(1.5),
+  borderRadius: theme.shape.borderRadius,
+  marginBottom: theme.spacing(0.5),
 }));
 
 const MessageContainer = styled(Box)({

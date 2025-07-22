@@ -51,7 +51,6 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
 
   // Fetch the URL preview data when the URL changes
   useEffect(() => {
-    console.log("UrlPreviewComponent useEffect triggered for:", url);
     const fetchPreview = async () => {
       try {
         setLoading(true); // Set loading state to true while fetching
@@ -69,7 +68,6 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
         const data: PreviewData = await response.json();
         setPreviewData(data); // Store the fetched preview data
       } catch (err) {
-        console.error("Error fetching preview:", err);
         setError(err instanceof Error ? err.message : "Unknown error"); // Set error message
       } finally {
         setLoading(false); // Reset loading state after fetching
@@ -117,7 +115,10 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
 
   // Handle card click to open the URL in a new tab
   const handleCardClick = () => {
-    window.open(url, "_blank", "noopener,noreferrer"); // Open URL safely
+    if (!anchorEl) {
+      // Only open the URL if the dropdown is not open
+      window.open(url, "_blank", "noopener,noreferrer"); // Open URL safely
+    }
   };
 
   // Handle dropdown menu open

@@ -28,6 +28,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import UrlPreviewComponent from "@/components/UrlPreviewComponent";
 import ReplyMessage from "./ReplyMessage";
+import ReplyPreview from "./ReplyPreview";
 
 // Define the type for URL parameters
 export type Params = {
@@ -313,8 +314,13 @@ function ChatScreen() {
       </MessageList>
 
       {/* Render the reply message if it exists */}
+      {/* TODO: dont render timestamp, use 100% width, use padding or margins for UrlPreviewComponent */}
       {replyMessage && (
-        <ReplyMessage message={replyMessage} renderBody={renderMessageBody} />
+        <ReplyPreview
+          message={replyMessage}
+          onCancel={() => setReplyMessage(null)}
+          chatId={chatId}
+        />
       )}
 
       {/* Input area for new messages */}
