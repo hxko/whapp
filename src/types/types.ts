@@ -11,4 +11,7 @@ export type Messagetype = {
   text: string; // Message content
   timestamp: Timestamp; // Timestamp of when the message was sent
   replyTo?: string; // Optional ID of the message being replied to
+  reactions: {
+    [emoji: string]: string[]; // array of user emails who reacted with this emoji
+  };
 };

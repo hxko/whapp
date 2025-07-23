@@ -6,7 +6,6 @@ import MessageTimestamp from "./MessageTimestamp"; // Import the timestamp compo
 import { Box, Typography, Menu, MenuItem, IconButton } from "@mui/material"; // Import MUI components
 import { deleteMessage } from "@/utils/utils"; // Import the deleteMessage function
 import DropdownIcon from "@components/DropdownIcon"; // Import DropdownIcon
-import ReplyMessage from "./ReplyMessage"; // Import ReplyMessage
 
 // Message component to display individual messages
 const Message = ({
@@ -83,10 +82,7 @@ export default Message;
 // Styled component for messages sent by the user
 const Sender = styled(Box)(({ theme }) => ({
   alignSelf: "flex-end",
-  margin: "10px 0",
   position: "relative",
-  width: "100%", // Default to full width
-
   "&:hover .MuiIconButton-root": {
     opacity: 1, // Show icon on hover
   },
@@ -95,10 +91,7 @@ const Sender = styled(Box)(({ theme }) => ({
 // Styled component for messages received from others
 const Recipient = styled(Box)(({ theme }) => ({
   alignSelf: "flex-start",
-  margin: "10px 0",
   position: "relative",
-  width: "100%",
-
   "&:hover .MuiIconButton-root": {
     opacity: 1, // Show icon on hover
   },

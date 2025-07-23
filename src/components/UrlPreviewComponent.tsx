@@ -225,6 +225,7 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
 
 // Styled components for layout and styling
 const StyledCard = styled(Card)(({ theme }) => ({
+  alignSelf: "flex-end",
   maxWidth: 400, // Set a maximum width for the card
   cursor: "pointer", // Change cursor to pointer on hover
   transition: "all 0.2s ease-in-out", // Smooth transition for hover effects

@@ -1,5 +1,10 @@
 import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
-import { sendMessage, fetchMessages, replyToMessage } from "@utils/utils";
+import {
+  sendMessage,
+  fetchMessages,
+  replyToMessage,
+  toggleReaction,
+} from "@utils/utils";
 import { useParams } from "next/navigation";
 import { styled, useTheme } from "@mui/material/styles";
 import {
@@ -12,6 +17,7 @@ import {
   Avatar,
   Typography,
   IconButton,
+  Stack,
 } from "@mui/material";
 import { Messagetype } from "types/types";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
@@ -41,8 +47,9 @@ function ChatScreen() {
   // Hooks and context
   const theme = useTheme();
   const { user } = useAuth();
+  const currentUserEmail = user?.email!;
   const params = useParams<Params>(); // Get params from the router
-  const chatId = params?.chatId; // Use optional chaining to safely access chatId
+  const chatId = params?.chatId as string; // Use optional chaining to safely access chatId
   const router = useRouter();
 
   // State variables
@@ -55,9 +62,6 @@ function ChatScreen() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [activeEmojiPickerId, setActiveEmojiPickerId] = useState<string | null>(
     null
-  );
-  const [reactions, setReactions] = useState<{ [messageId: string]: string }>(
-    {}
   );
 
   // Fetch chat partner data
@@ -109,7 +113,7 @@ function ChatScreen() {
 
   const handleSendMessage = async () => {
     if (newMessage.trim() && chatId) {
-      const senderEmail = user?.email;
+      const senderEmail = currentUserEmail;
       if (senderEmail) {
         // If replying to a message, include reply information
         if (replyMessage) {
@@ -166,12 +170,14 @@ function ChatScreen() {
   };
 
   //select reaction emoji
-  const handleSelectReaction = (
+  const handleSelectReaction = async (
     messageId: string,
     emoji: { native: string }
   ) => {
-    setReactions((prev) => ({ ...prev, [messageId]: emoji.native }));
-    setActiveEmojiPickerId(null);
+    if (chatId && user?.email) {
+      await toggleReaction(chatId, messageId, emoji.native, user.email);
+      setActiveEmojiPickerId(null);
+    }
   };
   // Group messages by date for better organization
   const groupMessagesByDate = (messages: Messagetype[]) => {
@@ -207,6 +213,13 @@ function ChatScreen() {
       groupedMessages[label].push(msg);
     });
 
+    // Remove labels with no messages
+    Object.keys(groupedMessages).forEach((key) => {
+      if (groupedMessages[key].length === 0) {
+        delete groupedMessages[key];
+      }
+    });
+
     return groupedMessages;
   };
 
@@ -214,12 +227,11 @@ function ChatScreen() {
 
   // Helper function to check if a message is from the current user
   const isCurrentUser = (message: Messagetype) => {
-    return message.sender === user?.email;
+    return message.sender === currentUserEmail;
   };
 
   const renderMessageBody = (msg: Messagetype) => {
     const isUrl = isValidUrl(msg.text);
-    console.log("Rendering message:", msg.text, "Is URL:", isUrl);
 
     if (isUrl && chatId) {
       return (
@@ -331,22 +343,34 @@ function ChatScreen() {
                     </IconButton>
 
                     {/* Reactions – Bottom Right */}
-                    {reactions[msg.id] && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          bottom: -5,
-                          right: 5,
-                          borderRadius: "12px",
-                          fontSize: "0.8rem",
-                          px: 0.5,
-                          py: 0,
-                          boxShadow: 1,
-                        }}
-                      >
-                        {reactions[msg.id]}
-                      </Box>
-                    )}
+                    {msg.reactions &&
+                      Object.entries(msg.reactions).length > 0 && (
+                        <ReactionsContainer isCurrentUser={isCurrentUser(msg)}>
+                          {Object.entries(msg.reactions).map(
+                            ([emoji, users]) => (
+                              <Chip
+                                title={users.join(", ") || "No users"}
+                                key={emoji}
+                                label={`${emoji} ${users.length}`}
+                                size="small"
+                                variant={
+                                  users.includes(currentUserEmail)
+                                    ? "filled"
+                                    : "outlined"
+                                }
+                                onClick={() =>
+                                  toggleReaction(
+                                    chatId,
+                                    msg.id,
+                                    emoji,
+                                    currentUserEmail
+                                  )
+                                }
+                              />
+                            )
+                          )}
+                        </ReactionsContainer>
+                      )}
 
                     {/* Emoji Picker – erscheint nach Klick */}
                     {activeEmojiPickerId === msg.id && (
@@ -532,9 +556,9 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   flexDirection: "column", // Stack messages vertically
   marginBottom: theme.spacing(1),
   marginTop: theme.spacing(1),
-  width: "100%",
   [theme.breakpoints.up("lg")]: {
-    width: "70%",
+    maxWidth: "70%",
+    minWidth: "50%",
   },
   position: "relative", // Important for absolute positioning of emoji button
 
@@ -577,4 +601,38 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   "&.other-user": {
     alignSelf: "flex-start",
   },
+}));
+
+const ReactionsContainer = styled(Stack)<{ isCurrentUser: boolean }>(
+  ({ theme, isCurrentUser }) => ({
+    fontSize: "0.8rem",
+    padding: theme.spacing(0.5),
+    display: "flex",
+    flexDirection: "row",
+    gap: theme.spacing(0.5),
+    flexFlow: "wrap",
+    transform: "translateY(-10px)",
+  })
+);
+// TODO: never read
+const ReactionItem = styled(Box)(({ theme }) => ({
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? theme.palette.grey[800] // Dark mode background color
+      : theme.palette.grey[200], // Light mode background color
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing(0.25),
+  cursor: "pointer",
+  borderRadius: "8px",
+  padding: theme.spacing(0.25, 0.5),
+  transition: "background-color 0.2s ease",
+  "&:hover": {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
+const ReactionCount = styled("span")(({ theme }) => ({
+  fontSize: "0.7rem",
+  color: theme.palette.text.secondary,
 }));

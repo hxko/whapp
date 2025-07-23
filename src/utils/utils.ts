@@ -153,6 +153,7 @@ export const fetchMessages = (
         text: decryptedText, // Use the decrypted message
         timestamp: data.timestamp || Timestamp.now(), // Use current date if null
         replyTo: data.replyTo || null,
+        reactions: data.reactions || {},
       });
     });
     setMessages(messages);
@@ -199,5 +200,47 @@ export const replyToMessage = async (
     console.log(`Replied to message ${messageId} in chat ${chatId}`);
   } catch (error) {
     console.error("Error replying to message: ", error);
+  }
+};
+
+import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { Message } from "@mui/icons-material";
+
+// Function to toggle emoji reaction
+export const toggleReaction = async (
+  chatId: string,
+  messageId: string,
+  emoji: string,
+  userEmail: string
+) => {
+  try {
+    const messageRef = doc(db, `chats/${chatId}/messages`, messageId);
+    const messageSnap = await getDoc(messageRef);
+
+    if (!messageSnap.exists()) return;
+
+    const data = messageSnap.data();
+    const reactions = data.reactions || {};
+
+    const currentUsers = reactions[emoji] || [];
+    const userHasReacted = currentUsers.includes(userEmail);
+
+    const updatedReactions = {
+      ...reactions,
+      [emoji]: userHasReacted
+        ? currentUsers.filter((email: string) => email !== userEmail)
+        : [...currentUsers, userEmail],
+    };
+
+    // Remove empty emoji arrays
+    Object.keys(updatedReactions).forEach((key) => {
+      if (updatedReactions[key].length === 0) {
+        delete updatedReactions[key];
+      }
+    });
+
+    await updateDoc(messageRef, { reactions: updatedReactions });
+  } catch (error) {
+    console.error("Error toggling emoji reaction: ", error);
   }
 };
