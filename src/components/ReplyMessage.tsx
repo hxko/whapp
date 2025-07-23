@@ -45,11 +45,13 @@ const ReplyContainer = styled(Box, {
 })<{ isOriginalSender: boolean }>(({ theme, isOriginalSender }) => ({
   alignSelf: isOriginalSender ? "flex-end" : "flex-start",
   width: "100%",
+  paddingLeft: theme.spacing(2),
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
   },
 }));
 
+// TODO: isOriginalSender not needed  here
 const ReplyContent = styled(Box, {
   shouldForwardProp: (prop) => prop !== "isOriginalSender",
 })<{ isOriginalSender: boolean }>(({ theme, isOriginalSender }) => ({

@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation";
 import UrlPreviewComponent from "@/components/UrlPreviewComponent";
 import ReplyMessage from "./ReplyMessage";
 import ReplyPreview from "./ReplyPreview";
+import Loading from "./Loading";
 
 // Define the type for URL parameters
 export type Params = {
@@ -50,6 +51,7 @@ function ChatScreen() {
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const [replyMessage, setReplyMessage] = useState<Messagetype | null>(null); // State to hold the message being replied to
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch chat partner data
   const {
@@ -141,7 +143,7 @@ function ChatScreen() {
 
   // Loading and error states for chat partner
   if (partnerLoading) {
-    return <Box>Loading chat partner...</Box>;
+    return <Loading />;
   }
 
   if (partnerError) {
@@ -150,6 +152,10 @@ function ChatScreen() {
   // reply to a message
   const handleReply = (message: Messagetype) => {
     setReplyMessage(message); // Set the message to reply to
+    // Focus message input
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0); // wait one tick to ensure render completes
   };
 
   // Group messages by date for better organization
@@ -326,6 +332,7 @@ function ChatScreen() {
       {/* Input area for new messages */}
       <InputContainer>
         <OutlinedInput
+          inputRef={inputRef}
           id="chat-input"
           style={{ marginRight: 10 }}
           value={newMessage}
