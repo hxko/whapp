@@ -86,9 +86,7 @@ const Sender = styled(Box)(({ theme }) => ({
   margin: "10px 0",
   position: "relative",
   width: "100%", // Default to full width
-  [theme.breakpoints.up("lg")]: {
-    maxWidth: "70%", // Apply 70% width on small screens and up
-  },
+
   "&:hover .MuiIconButton-root": {
     opacity: 1, // Show icon on hover
   },
@@ -100,9 +98,7 @@ const Recipient = styled(Box)(({ theme }) => ({
   margin: "10px 0",
   position: "relative",
   width: "100%",
-  [theme.breakpoints.up("lg")]: {
-    maxWidth: "70%",
-  },
+
   "&:hover .MuiIconButton-root": {
     opacity: 1, // Show icon on hover
   },

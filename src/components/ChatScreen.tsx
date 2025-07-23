@@ -30,6 +30,7 @@ import UrlPreviewComponent from "@/components/UrlPreviewComponent";
 import ReplyMessage from "./ReplyMessage";
 import ReplyPreview from "./ReplyPreview";
 import Loading from "./Loading";
+import QuickEmojiPicker from "@/components/QuickEmojiPicker";
 
 // Define the type for URL parameters
 export type Params = {
@@ -52,6 +53,12 @@ function ChatScreen() {
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const [replyMessage, setReplyMessage] = useState<Messagetype | null>(null); // State to hold the message being replied to
   const inputRef = useRef<HTMLInputElement>(null);
+  const [activeEmojiPickerId, setActiveEmojiPickerId] = useState<string | null>(
+    null
+  );
+  const [reactions, setReactions] = useState<{ [messageId: string]: string }>(
+    {}
+  );
 
   // Fetch chat partner data
   const {
@@ -158,6 +165,14 @@ function ChatScreen() {
     }, 0); // wait one tick to ensure render completes
   };
 
+  //select reaction emoji
+  const handleSelectReaction = (
+    messageId: string,
+    emoji: { native: string }
+  ) => {
+    setReactions((prev) => ({ ...prev, [messageId]: emoji.native }));
+    setActiveEmojiPickerId(null);
+  };
   // Group messages by date for better organization
   const groupMessagesByDate = (messages: Messagetype[]) => {
     const groupedMessages: { [key: string]: Messagetype[] } = {};
@@ -272,12 +287,14 @@ function ChatScreen() {
               return (
                 <React.Fragment key={msg.id}>
                   {/* Render URL preview or regular message */}
-                  {isUrl && chatId ? (
-                    <MessageContainer
-                      className={
-                        isCurrentUser(msg) ? "current-user" : "other-user"
-                      }
-                    >
+                  <MessageContainer
+                    className={
+                      isCurrentUser(msg) ? "current-user" : "other-user"
+                    }
+                    // Remove onMouseEnter and onMouseLeave - CSS handles this now
+                  >
+                    {/* Render URL preview or regular message */}
+                    {isUrl && chatId ? (
                       <UrlPreviewComponent
                         url={msg.text}
                         timestamp={msg.timestamp}
@@ -285,14 +302,72 @@ function ChatScreen() {
                         messageId={msg.id}
                         onReply={handleReply}
                       />
-                    </MessageContainer>
-                  ) : (
-                    <Message
-                      message={msg}
-                      chatId={chatId!}
-                      onReply={handleReply}
-                    />
-                  )}
+                    ) : (
+                      <Message
+                        message={msg}
+                        chatId={chatId!}
+                        onReply={handleReply}
+                      />
+                    )}
+
+                    {/* Emoji Button – now uses CSS class for hover behavior */}
+                    <IconButton
+                      size="small"
+                      className="emoji-hover-button" // Add this class
+                      onClick={() =>
+                        setActiveEmojiPickerId(
+                          activeEmojiPickerId === msg.id ? null : msg.id
+                        )
+                      }
+                      sx={{
+                        backgroundColor: theme.palette.background.paper,
+                        boxShadow: 1,
+                        "&:hover": {
+                          backgroundColor: theme.palette.action.hover,
+                        },
+                      }}
+                    >
+                      <EmojiEmotionsIcon fontSize="small" />
+                    </IconButton>
+
+                    {/* Reactions – Bottom Right */}
+                    {reactions[msg.id] && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          bottom: -5,
+                          right: 5,
+                          borderRadius: "12px",
+                          fontSize: "0.8rem",
+                          px: 0.5,
+                          py: 0,
+                          boxShadow: 1,
+                        }}
+                      >
+                        {reactions[msg.id]}
+                      </Box>
+                    )}
+
+                    {/* Emoji Picker – erscheint nach Klick */}
+                    {activeEmojiPickerId === msg.id && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 30,
+                          left: "auto",
+
+                          zIndex: 2,
+                        }}
+                      >
+                        <QuickEmojiPicker
+                          onSelect={(emoji) =>
+                            handleSelectReaction(msg.id, emoji)
+                          }
+                          onClose={() => setActiveEmojiPickerId(null)}
+                        />
+                      </Box>
+                    )}
+                  </MessageContainer>
 
                   {/* Render replies */}
                   {replies.map((reply) => {
@@ -415,10 +490,10 @@ const InputContainer = styled(Box)(({ theme }) => ({
   background: theme.palette.background.paper,
 }));
 
-const EmojiPickerContainer = styled(Box)(() => ({
+const EmojiPickerContainer = styled(Box)(({ theme }) => ({
   position: "absolute",
   bottom: "60px",
-  left: "10px",
+  marginLef: theme.spacing(2),
   zIndex: 1000,
 }));
 
@@ -452,22 +527,54 @@ const BackButton = styled(IconButton)(({ theme }) => ({
   },
 }));
 
-// Simple message container that mimics the Message component's alignment behavior
 const MessageContainer = styled(Box)(({ theme }) => ({
   display: "flex",
+  flexDirection: "column", // Stack messages vertically
   marginBottom: theme.spacing(1),
   marginTop: theme.spacing(1),
   width: "100%",
+  [theme.breakpoints.up("lg")]: {
+    width: "70%",
+  },
+  position: "relative", // Important for absolute positioning of emoji button
 
-  // Use CSS classes for alignment instead of props
+  // Hide emoji button by default
+  "& .emoji-hover-button": {
+    opacity: 0,
+    visibility: "hidden",
+    transition: "opacity 0.2s ease, visibility 0.2s ease",
+  },
+
+  // Show emoji button on hover
+  "&:hover .emoji-hover-button": {
+    opacity: 1,
+    visibility: "visible",
+  },
+
+  // Position emoji button for current user (left side of message)
+  "&.current-user .emoji-hover-button": {
+    position: "absolute",
+    top: "50%",
+    left: "-35px", // Position to the left of the message
+    transform: "translateY(-50%)",
+    zIndex: 1,
+  },
+
+  // Position emoji button for other user (right side of message)
+  "&.other-user .emoji-hover-button": {
+    position: "absolute",
+    top: "50%",
+    right: "-35px", // Position to the right of the message
+    transform: "translateY(-50%)",
+    zIndex: 1,
+  },
+  // Align current user messages to the right
   "&.current-user": {
-    justifyContent: "flex-end", // Align messages from the current user to the right
-  },
-  "&.other-user": {
-    justifyContent: "flex-start", // Align messages from other users to the left
+    alignSelf: "flex-end",
   },
 
-  "& > *": {
-    maxWidth: "70%", // Limit width like chat messages
+  // Align other user messages to the left
+  "&.other-user": {
+    alignSelf: "flex-start",
   },
 }));
