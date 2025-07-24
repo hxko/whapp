@@ -63,6 +63,7 @@ function ChatScreen() {
   const [activeEmojiPickerId, setActiveEmojiPickerId] = useState<string | null>(
     null
   );
+  const [prevMessageCount, setPrevMessageCount] = useState(0);
 
   // Fetch chat partner data
   const {
@@ -81,13 +82,18 @@ function ChatScreen() {
     }
   }, [chatId]);
 
-  // Scroll to the bottom of the message list when new messages arrive
+  // Scroll to bottom when new messages are added
   useLayoutEffect(() => {
     const el = messageListRef.current;
-    if (el) {
+
+    // Only scroll if the number of messages increased (new message added)
+    if (el && messages.length > prevMessageCount) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [messages]);
+
+    // Update the previous count
+    setPrevMessageCount(messages.length);
+  }, [messages, prevMessageCount]);
 
   // Handle click outside of emoji picker to close it
   useEffect(() => {
@@ -341,57 +347,54 @@ function ChatScreen() {
                     >
                       <EmojiEmotionsIcon fontSize="small" />
                     </IconButton>
-
-                    {/* Reactions – Bottom Right */}
-                    {msg.reactions &&
-                      Object.entries(msg.reactions).length > 0 && (
-                        <ReactionsContainer isCurrentUser={isCurrentUser(msg)}>
-                          {Object.entries(msg.reactions).map(
-                            ([emoji, users]) => (
-                              <Chip
-                                title={users.join(", ") || "No users"}
-                                key={emoji}
-                                label={`${emoji} ${users.length}`}
-                                size="small"
-                                variant={
-                                  users.includes(currentUserEmail)
-                                    ? "filled"
-                                    : "outlined"
-                                }
-                                onClick={() =>
-                                  toggleReaction(
-                                    chatId,
-                                    msg.id,
-                                    emoji,
-                                    currentUserEmail
-                                  )
-                                }
-                              />
-                            )
-                          )}
-                        </ReactionsContainer>
-                      )}
-
-                    {/* Emoji Picker – erscheint nach Klick */}
-                    {activeEmojiPickerId === msg.id && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 30,
-                          left: "auto",
-
-                          zIndex: 2,
-                        }}
-                      >
-                        <QuickEmojiPicker
-                          onSelect={(emoji) =>
-                            handleSelectReaction(msg.id, emoji)
-                          }
-                          onClose={() => setActiveEmojiPickerId(null)}
-                        />
-                      </Box>
-                    )}
                   </MessageContainer>
+                  {/* Reactions – Bottom Right */}
+                  {msg.reactions &&
+                    Object.entries(msg.reactions).length > 0 && (
+                      <ReactionsContainer isCurrentUser={isCurrentUser(msg)}>
+                        {Object.entries(msg.reactions).map(([emoji, users]) => (
+                          <Chip
+                            title={users.join(", ") || "No users"}
+                            key={emoji}
+                            label={`${emoji} ${users.length}`}
+                            size="small"
+                            variant={
+                              users.includes(currentUserEmail)
+                                ? "filled"
+                                : "outlined"
+                            }
+                            onClick={() =>
+                              toggleReaction(
+                                chatId,
+                                msg.id,
+                                emoji,
+                                currentUserEmail
+                              )
+                            }
+                          />
+                        ))}
+                      </ReactionsContainer>
+                    )}
+
+                  {/* Emoji Picker – erscheint nach Klick */}
+                  {activeEmojiPickerId === msg.id && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 30,
+                        left: "auto",
+
+                        zIndex: 2,
+                      }}
+                    >
+                      <QuickEmojiPicker
+                        onSelect={(emoji) =>
+                          handleSelectReaction(msg.id, emoji)
+                        }
+                        onClose={() => setActiveEmojiPickerId(null)}
+                      />
+                    </Box>
+                  )}
 
                   {/* Render replies */}
                   {replies.map((reply) => {
@@ -558,7 +561,6 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(1),
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
-    minWidth: "50%",
   },
   position: "relative", // Important for absolute positioning of emoji button
 
@@ -605,34 +607,16 @@ const MessageContainer = styled(Box)(({ theme }) => ({
 
 const ReactionsContainer = styled(Stack)<{ isCurrentUser: boolean }>(
   ({ theme, isCurrentUser }) => ({
+    alignSelf: isCurrentUser ? "flex-end" : "flex-start",
     fontSize: "0.8rem",
     padding: theme.spacing(0.5),
     display: "flex",
     flexDirection: "row",
     gap: theme.spacing(0.5),
     flexFlow: "wrap",
-    transform: "translateY(-10px)",
+    transform: "translateY(-14px)",
+    [theme.breakpoints.up("lg")]: {
+      maxWidth: "70%",
+    },
   })
 );
-// TODO: never read
-const ReactionItem = styled(Box)(({ theme }) => ({
-  backgroundColor:
-    theme.palette.mode === "dark"
-      ? theme.palette.grey[800] // Dark mode background color
-      : theme.palette.grey[200], // Light mode background color
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(0.25),
-  cursor: "pointer",
-  borderRadius: "8px",
-  padding: theme.spacing(0.25, 0.5),
-  transition: "background-color 0.2s ease",
-  "&:hover": {
-    backgroundColor: theme.palette.action.hover,
-  },
-}));
-
-const ReactionCount = styled("span")(({ theme }) => ({
-  fontSize: "0.7rem",
-  color: theme.palette.text.secondary,
-}));
