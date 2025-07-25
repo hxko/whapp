@@ -63,6 +63,7 @@ function ChatScreen() {
   const [activeEmojiPickerId, setActiveEmojiPickerId] = useState<string | null>(
     null
   );
+  const quickEmojiPickerRef = useRef<HTMLDivElement | null>(null);
   const [prevMessageCount, setPrevMessageCount] = useState(0);
 
   // Fetch chat partner data
@@ -117,6 +118,27 @@ function ChatScreen() {
     };
   }, [showEmojiPicker]);
 
+  // handling click outside of QuickEmojiPicker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        quickEmojiPickerRef.current &&
+        !quickEmojiPickerRef.current.contains(event.target as Node)
+      ) {
+        setActiveEmojiPickerId(null);
+      }
+    };
+
+    if (activeEmojiPickerId) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activeEmojiPickerId]);
   const handleSendMessage = async () => {
     if (newMessage.trim() && chatId) {
       const senderEmail = currentUserEmail;
@@ -174,7 +196,13 @@ function ChatScreen() {
       inputRef.current?.focus();
     }, 0); // wait one tick to ensure render completes
   };
-
+  // Function to calculate total reactions
+  const calculateTotalReactions = (reactions: { [key: string]: string[] }) => {
+    return Object.values(reactions).reduce(
+      (total, users) => total + users.length,
+      0
+    );
+  };
   //select reaction emoji
   const handleSelectReaction = async (
     messageId: string,
@@ -347,6 +375,21 @@ function ChatScreen() {
                     >
                       <EmojiEmotionsIcon fontSize="small" />
                     </IconButton>
+
+                    {/* Quick reactionEmoji Picker – positioned next to emoji button */}
+                    {activeEmojiPickerId === msg.id && (
+                      <QuickEmojiPickerContainer
+                        ref={quickEmojiPickerRef}
+                        isCurrentUser={isCurrentUser(msg)}
+                      >
+                        <QuickEmojiPicker
+                          onSelect={(emoji) =>
+                            handleSelectReaction(msg.id, emoji)
+                          }
+                          onClose={() => setActiveEmojiPickerId(null)}
+                        />
+                      </QuickEmojiPickerContainer>
+                    )}
                   </MessageContainer>
                   {/* Reactions – Bottom Right */}
                   {msg.reactions &&
@@ -356,7 +399,7 @@ function ChatScreen() {
                           <Chip
                             title={users.join(", ") || "No users"}
                             key={emoji}
-                            label={`${emoji} ${users.length}`}
+                            label={emoji}
                             size="small"
                             variant={
                               users.includes(currentUserEmail)
@@ -373,28 +416,15 @@ function ChatScreen() {
                             }
                           />
                         ))}
+                        {/* Total Reactions Count */}
+                        <Typography
+                          variant="caption"
+                          sx={{ alignSelf: "center" }}
+                        >
+                          {calculateTotalReactions(msg.reactions)}
+                        </Typography>
                       </ReactionsContainer>
                     )}
-
-                  {/* Emoji Picker – erscheint nach Klick */}
-                  {activeEmojiPickerId === msg.id && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: 30,
-                        left: "auto",
-
-                        zIndex: 2,
-                      }}
-                    >
-                      <QuickEmojiPicker
-                        onSelect={(emoji) =>
-                          handleSelectReaction(msg.id, emoji)
-                        }
-                        onClose={() => setActiveEmojiPickerId(null)}
-                      />
-                    </Box>
-                  )}
 
                   {/* Render replies */}
                   {replies.map((reply) => {
@@ -559,6 +589,7 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   flexDirection: "column", // Stack messages vertically
   marginBottom: theme.spacing(1),
   marginTop: theme.spacing(1),
+
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
   },
@@ -618,5 +649,16 @@ const ReactionsContainer = styled(Stack)<{ isCurrentUser: boolean }>(
     [theme.breakpoints.up("lg")]: {
       maxWidth: "70%",
     },
+  })
+);
+
+const QuickEmojiPickerContainer = styled(Box)<{ isCurrentUser: boolean }>(
+  ({ theme, isCurrentUser }) => ({
+    position: "absolute",
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 1000,
+    right: isCurrentUser ? "165px" : "0px",
+    left: isCurrentUser ? "none" : "0px",
   })
 );
