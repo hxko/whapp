@@ -658,7 +658,7 @@ const QuickEmojiPickerContainer = styled(Box)<{ isCurrentUser: boolean }>(
     top: "50%",
     transform: "translateY(-50%)",
     zIndex: 1000,
-    right: isCurrentUser ? "165px" : "0px",
+    right: isCurrentUser ? "200px" : "none",
     left: isCurrentUser ? "none" : "0px",
   })
 );
