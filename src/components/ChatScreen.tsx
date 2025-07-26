@@ -399,7 +399,9 @@ function ChatScreen() {
                           <Chip
                             title={users.join(", ") || "No users"}
                             key={emoji}
-                            label={emoji}
+                            label={`${emoji} ${
+                              users.length > 1 ? users.length : ""
+                            }`}
                             size="small"
                             variant={
                               users.includes(currentUserEmail)
@@ -416,13 +418,13 @@ function ChatScreen() {
                             }
                           />
                         ))}
-                        {/* Total Reactions Count */}
-                        <Typography
+                        {/* Total Reactions Count TODO*/}
+                        {/* <Typography
                           variant="caption"
                           sx={{ alignSelf: "center" }}
                         >
                           {calculateTotalReactions(msg.reactions)}
-                        </Typography>
+                        </Typography> */}
                       </ReactionsContainer>
                     )}
 

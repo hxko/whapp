@@ -204,43 +204,53 @@ export const replyToMessage = async (
 };
 
 import { updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
-import { Message } from "@mui/icons-material";
 
 // Function to toggle emoji reaction
 export const toggleReaction = async (
-  chatId: string,
-  messageId: string,
-  emoji: string,
-  userEmail: string
+  chatId: string, // The ID of the chat where the message is located
+  messageId: string, // The ID of the message to which the reaction is being added or removed
+  emoji: string, // The emoji that the user is reacting with
+  userEmail: string // The email of the user who is reacting
 ) => {
   try {
+    // Reference to the specific message document in Firestore
     const messageRef = doc(db, `chats/${chatId}/messages`, messageId);
+
+    // Fetch the current message document
     const messageSnap = await getDoc(messageRef);
 
+    // If the message does not exist, exit the function
     if (!messageSnap.exists()) return;
 
+    // Get the data of the message
     const data = messageSnap.data();
+    // Retrieve the current reactions or initialize an empty object if none exist
     const reactions = data.reactions || {};
 
+    // Get the list of users who have reacted with the specified emoji
     const currentUsers = reactions[emoji] || [];
+    // Check if the current user has already reacted with this emoji
     const userHasReacted = currentUsers.includes(userEmail);
 
+    // Create an updated reactions object
     const updatedReactions = {
-      ...reactions,
-      [emoji]: userHasReacted
-        ? currentUsers.filter((email: string) => email !== userEmail)
-        : [...currentUsers, userEmail],
+      ...reactions, // Spread the existing reactions
+      [emoji]: userHasReacted // If the user has reacted, remove them; otherwise, add them
+        ? currentUsers.filter((email: string) => email !== userEmail) // Remove the user's email from the list
+        : [...currentUsers, userEmail], // Add the user's email to the list
     };
 
-    // Remove empty emoji arrays
+    // Remove any emoji entries that have no users reacting
     Object.keys(updatedReactions).forEach((key) => {
       if (updatedReactions[key].length === 0) {
-        delete updatedReactions[key];
+        delete updatedReactions[key]; // Delete the emoji entry if no users are left
       }
     });
 
+    // Update the message document in Firestore with the new reactions
     await updateDoc(messageRef, { reactions: updatedReactions });
   } catch (error) {
+    // Log any errors that occur during the process
     console.error("Error toggling emoji reaction: ", error);
   }
 };
