@@ -13,6 +13,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider, githubProvider } from "../../firebase"; // Adjust path as needed
 import { signInWithProvider } from "../../firebase/auth/signInWithProvider"; // Import the signInWithProvider function
+import { refreshUserProfileFromProviders } from "../../firebase/auth/signInWithProvider"; // adjust import as needed
 
 // Type definitions
 interface ErrorState {
@@ -187,6 +188,9 @@ export const useAccountLinking = () => {
 
       try {
         await linkWithPopup(user, provider);
+        // 🔄 Refresh profile from remaining linked providers
+        await refreshUserProfileFromProviders();
+
         return {
           success: true,
           message: `${providerName} account linked successfully!`,
@@ -214,7 +218,6 @@ export const useAccountLinking = () => {
       setLoading(true);
       setError(null);
 
-      // Safety check: prevent unlinking if it's the only provider
       if (linkedProviders.length <= 1) {
         const errorMessage =
           "You must have at least one sign-in method linked to your account.";
@@ -225,6 +228,10 @@ export const useAccountLinking = () => {
 
       try {
         await unlink(user, providerId);
+
+        // 🔄 Refresh profile from remaining linked providers
+        await refreshUserProfileFromProviders();
+
         return {
           success: true,
           message: `${providerName} account unlinked successfully!`,

@@ -101,7 +101,6 @@ const UserDashboard: React.FC = () => {
   const showNotification = (message: string, severity: AlertColor = "info") => {
     setNotification({ open: true, message, severity });
   };
-
   const handleCloseNotification = () => {
     setNotification((prev) => ({ ...prev, open: false }));
   };

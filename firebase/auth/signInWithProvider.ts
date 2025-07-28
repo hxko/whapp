@@ -8,6 +8,7 @@ import {
   GithubAuthProvider,
   UserCredential,
   getAdditionalUserInfo,
+  updateProfile,
 } from "firebase/auth";
 import { auth } from "../../firebase";
 
@@ -29,7 +30,7 @@ const getProviderFromMethod = (method: string): AuthProvider | null => {
       return new GoogleAuthProvider();
     case "github.com": {
       const provider = new GithubAuthProvider();
-      provider.addScope("user:email"); // Ensure GitHub returns email
+      provider.addScope("user:email");
       return provider;
     }
     default:
@@ -37,7 +38,6 @@ const getProviderFromMethod = (method: string): AuthProvider | null => {
   }
 };
 
-// Extrahiere die AuthCredential aus dem UserCredential für bekannte Provider
 const getCredentialFromResult = (
   result: UserCredential
 ): AuthCredential | null => {
@@ -61,6 +61,26 @@ const getProviderDisplayName = (method: string): string => {
     default:
       return method;
   }
+};
+
+const refreshUserProfileFromProviders = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  await user.reload(); // ensure up-to-date providerData
+
+  const currentProviderId = user.providerData.at(-1)?.providerId;
+  const currentProviderData = user.providerData.find(
+    (p) => p.providerId === currentProviderId
+  );
+
+  const newName = currentProviderData?.displayName ?? null;
+  const newPhoto = currentProviderData?.photoURL ?? null;
+
+  await updateProfile(user, {
+    displayName: newName,
+    photoURL: newPhoto,
+  });
 };
 
 export const signInWithProvider = async (
@@ -90,28 +110,27 @@ export const signInWithProvider = async (
       (method) => !alreadyLinked.includes(method)
     );
 
-    // Versuche automatisch unlinked Provider zu verlinken
     for (const method of unlinkedMethods) {
       const existingProvider = getProviderFromMethod(method);
       if (!existingProvider) continue;
 
       try {
-        // Benutzer mit dem bereits bestehenden Provider anmelden
         await signInWithPopup(auth, existingProvider);
 
         if (auth.currentUser) {
-          // Neues Credential zum aktuellen User verlinken
           const linkedUser = await linkWithCredential(
             auth.currentUser,
             credential
           );
 
+          await refreshUserProfileFromProviders();
+
           return {
             success: true,
             user: linkedUser.user,
-            message: `Dein ${providerName} Account wurde mit ${getProviderDisplayName(
+            message: `Your ${providerName} account was linked to your existing ${getProviderDisplayName(
               method
-            )} verlinkt.`,
+            )} account.`,
             email,
             existingMethods,
             isNewUser: false,
@@ -119,35 +138,36 @@ export const signInWithProvider = async (
           };
         }
       } catch (linkError: any) {
-        console.error(`Linking mit ${method} fehlgeschlagen:`, linkError);
+        console.error(`Linking with ${method} failed:`, linkError);
         continue;
       }
     }
 
+    await refreshUserProfileFromProviders();
+
     return {
       success: true,
-      message: `Erfolgreich mit ${providerName} angemeldet.`,
+      message: `Successfully signed in with ${providerName}.`,
       user: result.user,
       email,
       existingMethods,
       isNewUser: additionalUserInfo?.isNewUser,
     };
   } catch (error: any) {
-    // Behandlung von Account-Konflikten
     if (error.code === "auth/account-exists-with-different-credential") {
       const email: string | undefined = error.customData?.email || error.email;
       const pendingCredential = error.credential as AuthCredential | null;
 
       if (!email || !pendingCredential) {
         console.error(
-          "⚠️ Fehlende Email oder Credential im account-exists-with-different-credential Fehler:",
+          "⚠️ Missing email or credential in account-exists-with-different-credential error:",
           { fullError: error, email, credential: error.credential }
         );
 
         return {
           success: false,
           error:
-            "Account-Konflikt aufgetreten, aber es fehlen notwendige Infos (Email oder Credential). Bitte melde dich mit dem zuvor genutzten Anbieter an.",
+            "Account conflict detected, but missing required information (email or credential). Please sign in with the previously used provider.",
         };
       }
 
@@ -159,28 +179,29 @@ export const signInWithProvider = async (
         if (!existingProvider) {
           return {
             success: false,
-            error: `Nicht unterstützter Anbieter: ${primaryMethod}`,
+            error: `Unsupported provider: ${primaryMethod}`,
           };
         }
 
-        // Stille Anmeldung mit dem bestehenden Account
         await signInWithPopup(auth, existingProvider);
 
         if (auth.currentUser) {
-          // Verlinke den neuen Credential mit dem existierenden User
           const linkedUser = await linkWithCredential(
             auth.currentUser,
             pendingCredential
           );
+
+          await refreshUserProfileFromProviders();
+
           return {
             success: true,
             user: linkedUser.user,
             email,
-            message: `Dein ${getProviderDisplayName(
+            message: `Your ${getProviderDisplayName(
               provider.providerId
-            )} Account wurde mit deinem bestehenden ${getProviderDisplayName(
+            )} account was linked to your existing ${getProviderDisplayName(
               primaryMethod
-            )} Account verlinkt.`,
+            )} account.`,
             existingMethods,
             isNewUser: false,
             linkedAutomatically: true,
@@ -188,23 +209,24 @@ export const signInWithProvider = async (
         } else {
           return {
             success: false,
-            error: "Verlinkung fehlgeschlagen: Kein Benutzer angemeldet.",
+            error: "Linking failed: No user is currently signed in.",
           };
         }
       } catch (linkError: any) {
-        console.error("Verlinkung nach Konflikt fehlgeschlagen:", linkError);
+        console.error("Linking after conflict failed:", linkError);
         return {
           success: false,
-          error:
-            linkError.message || "Verlinkung nach Konflikt fehlgeschlagen.",
+          error: linkError.message || "Linking after conflict failed.",
         };
       }
     }
 
-    console.error("Anmeldefehler:", error);
+    console.error("Sign-in error:", error);
     return {
       success: false,
-      error: error.message || "Anmeldung fehlgeschlagen.",
+      error: error.message || "Sign-in failed.",
     };
   }
 };
+
+export { refreshUserProfileFromProviders };
