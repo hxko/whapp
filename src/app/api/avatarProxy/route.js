@@ -5,6 +5,17 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url"); // Get the URL from the query parameters
 
+  // Damit niemand deinen Proxy missbraucht, kannst du die erlaubten Domains einschränken:
+  const allowedDomains = [
+    "lh3.googleusercontent.com",
+    "avatars.githubusercontent.com",
+  ];
+
+  const parsed = new URL(url);
+  if (!allowedDomains.includes(parsed.hostname)) {
+    return NextResponse.json({ error: "Domain not allowed" }, { status: 403 });
+  }
+
   if (!url) {
     return NextResponse.json({ error: "URL is required" }, { status: 400 });
   }

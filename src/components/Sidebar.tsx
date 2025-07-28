@@ -18,6 +18,9 @@ import {
 } from "@utils/utils";
 import { Chat } from "types/types";
 import { useRouter } from "next/navigation";
+import { Menu, MenuItem, ListItemIcon } from "@mui/material";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 const Sidebar: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -78,6 +81,28 @@ const Sidebar: React.FC = () => {
     return chatPartner?.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
+
+  const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
+
+  const handleGoToDashboard = () => {
+    handleCloseMenu();
+    router.push("/dashboard");
+  };
+
+  const handleSignOutAndClose = async () => {
+    handleCloseMenu();
+    await handleSignOut();
+  };
+
+  // TODO: Use UserAvatar component
   // Construct the proxy URL for the user avatar
   const avatarUrl = user?.photoURL;
   const proxyUrl = avatarUrl
@@ -88,20 +113,46 @@ const Sidebar: React.FC = () => {
     <Container>
       <Header>
         <UserAvatar
-          title={user?.email || "User avatar - click to sign out"}
-          onClick={handleSignOut}
-          src={proxyUrl} // Use the proxy URL for the avatar
+          title={user?.email || "User avatar"}
+          src={proxyUrl}
           alt={user?.email ? `${user.email} avatar` : "User avatar"}
           role="button"
-          aria-label={`Sign out ${user?.email || "user"}`}
+          aria-controls={menuOpen ? "user-menu" : undefined}
+          aria-haspopup="true"
+          aria-expanded={menuOpen ? "true" : undefined}
+          onClick={handleAvatarClick}
           tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleSignOut();
-            }
-          }}
         />
+        <Menu
+          id="user-menu"
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={handleCloseMenu}
+          onClick={handleCloseMenu}
+          PaperProps={{
+            elevation: 2,
+            sx: {
+              mt: 1.5,
+              minWidth: 180,
+            },
+          }}
+          transformOrigin={{ horizontal: "right", vertical: "top" }}
+          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        >
+          <MenuItem onClick={handleGoToDashboard}>
+            <ListItemIcon>
+              <DashboardIcon fontSize="small" />
+            </ListItemIcon>
+            Dashboard
+          </MenuItem>
+          <MenuItem onClick={handleSignOutAndClose}>
+            <ListItemIcon>
+              <LogoutIcon fontSize="small" />
+            </ListItemIcon>
+            Sign Out
+          </MenuItem>
+        </Menu>
+
         <IconsContainer>
           <IconButton
             onClick={handleChatActions}

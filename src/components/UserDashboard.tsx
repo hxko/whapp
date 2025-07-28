@@ -20,7 +20,9 @@ import {
   Paper,
   CircularProgress,
   Grid,
+  Theme,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { styled } from "@mui/material/styles";
 import {
   Google as GoogleIcon,
@@ -38,6 +40,18 @@ import { useAccountLinking } from "@hooks/useAccountLinking";
 import { useLinkedProviders } from "@hooks/useLinkedProvider";
 import type { AlertColor } from "@mui/material";
 import { useRouter } from "next/navigation";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { deleteUserAccount } from "@utils/deleteUserAccount";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControlLabel,
+  Checkbox,
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import UserAvatar from "@components/UserAvatar";
 
 interface NotificationState {
   open: boolean;
@@ -85,6 +99,8 @@ const LeftProviderInfo = styled(Box)({
 });
 
 const UserDashboard: React.FC = () => {
+  const theme = useTheme();
+
   const router = useRouter();
   const [user] = useAuthState(auth);
   const [notification, setNotification] = useState<NotificationState>({
@@ -92,6 +108,11 @@ const UserDashboard: React.FC = () => {
     message: "",
     severity: "info",
   });
+
+  // State für Dialog & Optionen
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDeep, setDeleteDeep] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   const { linkedProviders, isProviderLinked, count, reloadProviders } =
     useLinkedProviders(user || null);
@@ -116,12 +137,23 @@ const UserDashboard: React.FC = () => {
     }
   };
 
-  const getProviderColor = (providerId: string): string => {
+  // Funktion zum Auslösen des Dialogs
+  const openDeleteDialog = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    if (!deleting) {
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const getProviderColor = (providerId: string, theme: Theme): string => {
     switch (providerId) {
       case "google.com":
         return "#4285f4";
       case "github.com":
-        return "#333";
+        return theme.palette.mode === "dark" ? "#fff" : "#333";
       default:
         return "#666";
     }
@@ -177,6 +209,26 @@ const UserDashboard: React.FC = () => {
     }
   };
 
+  const confirmDeleteAccount = async () => {
+    if (!user) return;
+
+    setDeleting(true);
+
+    const providerId = user.providerData[0]?.providerId || "google.com";
+
+    const result = await deleteUserAccount(user, providerId, deleteDeep);
+
+    setDeleting(false);
+    setDeleteDialogOpen(false);
+
+    if (result.success) {
+      showNotification("Account deleted successfully", "success");
+      router.push("/");
+    } else {
+      showNotification(`Failed to delete account: ${result.error}`, "error");
+    }
+  };
+
   const handleNavigateToHome = () => {
     router.push("/");
   };
@@ -195,17 +247,12 @@ const UserDashboard: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6 }}>
           <StickyProfileCard>
             <CardContent>
-              <Avatar
-                src={user.photoURL || undefined}
-                sx={{
-                  width: 80,
-                  height: 80,
-                  margin: "0 auto",
-                  marginBottom: 2,
-                }}
-              >
-                {user.displayName?.[0] || user.email?.[0] || "U"}
-              </Avatar>
+              <BackButton onClick={handleNavigateToHome} title="Go to Chat App">
+                <ArrowBackIcon />
+              </BackButton>
+              <Box display="flex" justifyContent="center" my={2}>
+                <UserAvatar user={user} sx={{ width: 112, height: 112 }} />
+              </Box>
               <Typography variant="h5" gutterBottom>
                 {user.displayName || "User"}
               </Typography>
@@ -227,6 +274,16 @@ const UserDashboard: React.FC = () => {
                 sx={{ mt: 2 }}
               >
                 Sign Out
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={openDeleteDialog}
+                fullWidth
+                startIcon={<DeleteIcon />}
+                sx={{ mt: 2 }}
+              >
+                Delete Account
               </Button>
             </CardContent>
           </StickyProfileCard>
@@ -261,7 +318,10 @@ const UserDashboard: React.FC = () => {
                           <ListItemIcon sx={{ minWidth: 40 }}>
                             <IconComponent
                               sx={{
-                                color: getProviderColor(providerOption.id),
+                                color: getProviderColor(
+                                  providerOption.id,
+                                  theme
+                                ),
                               }}
                             />
                           </ListItemIcon>
@@ -450,8 +510,55 @@ const UserDashboard: React.FC = () => {
           {notification.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={closeDeleteDialog}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete Account</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Are you sure you want to permanently delete your account? This
+            action cannot be undone.
+          </Typography>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={deleteDeep}
+                onChange={(e) => setDeleteDeep(e.target.checked)}
+                disabled={deleting}
+              />
+            }
+            label="Also delete all your chats and messages"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDeleteAccount}
+            color="error"
+            variant="contained"
+            disabled={deleting}
+          >
+            {deleting ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Delete"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </DashboardContainer>
   );
 };
 
 export default UserDashboard;
+
+const BackButton = styled(IconButton)(({ theme }) => ({
+  position: "absolute",
+  display: "flex",
+}));

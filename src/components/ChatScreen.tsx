@@ -226,18 +226,21 @@ function ChatScreen() {
 
     messages.forEach((msg) => {
       const messageDate = new Date(msg.timestamp.toDate());
-      const isToday = messageDate.toDateString() === today.toDateString(); // Check if the message is from today
-      let label;
+      const isToday = messageDate.toDateString() === today.toDateString();
 
-      // Determine the label based on how old the message is
+      let label: string;
+
       if (isToday) {
-        label = "Today"; // Set label to "Today" if the message is from today
+        label = "Today";
       } else {
-        const diffTime = Math.abs(today.getTime() - messageDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays < 7) {
+        const diffTime = today.getTime() - messageDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 7 && diffDays > 0) {
+          // within the past 7 days (not today)
           label = messageDate.toLocaleDateString("en-US", { weekday: "long" });
         } else {
+          // older than 7 days
           label = messageDate.toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
@@ -246,18 +249,11 @@ function ChatScreen() {
         }
       }
 
-      // Group messages by the determined label
       if (!groupedMessages[label]) {
         groupedMessages[label] = [];
       }
-      groupedMessages[label].push(msg);
-    });
 
-    // Remove labels with no messages
-    Object.keys(groupedMessages).forEach((key) => {
-      if (groupedMessages[key].length === 0) {
-        delete groupedMessages[key];
-      }
+      groupedMessages[label].push(msg);
     });
 
     return groupedMessages;
