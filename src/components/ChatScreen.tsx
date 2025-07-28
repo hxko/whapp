@@ -33,9 +33,9 @@ import OutlinedInput from "@mui/material/OutlinedInput";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import UrlPreviewComponent from "@/components/UrlPreviewComponent";
-import ReplyMessage from "./ReplyMessage";
-import ReplyPreview from "./ReplyPreview";
-import Loading from "./Loading";
+import ReplyMessage from "@components/ReplyMessage";
+import ReplyPreview from "@components/ReplyPreview";
+import Loading from "@components/Loading";
 import QuickEmojiPicker from "@/components/QuickEmojiPicker";
 
 // Define the type for URL parameters
@@ -139,6 +139,8 @@ function ChatScreen() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [activeEmojiPickerId]);
+
+  // handling send message
   const handleSendMessage = async () => {
     if (newMessage.trim() && chatId) {
       const senderEmail = currentUserEmail;
@@ -188,6 +190,7 @@ function ChatScreen() {
   if (partnerError) {
     return <Box>Error loading chat partner: {partnerError}</Box>;
   }
+
   // reply to a message
   const handleReply = (message: Messagetype) => {
     setReplyMessage(message); // Set the message to reply to
@@ -196,6 +199,7 @@ function ChatScreen() {
       inputRef.current?.focus();
     }, 0); // wait one tick to ensure render completes
   };
+
   // Function to calculate total reactions
   const calculateTotalReactions = (reactions: { [key: string]: string[] }) => {
     return Object.values(reactions).reduce(
@@ -203,6 +207,7 @@ function ChatScreen() {
       0
     );
   };
+
   //select reaction emoji
   const handleSelectReaction = async (
     messageId: string,
@@ -213,6 +218,7 @@ function ChatScreen() {
       setActiveEmojiPickerId(null);
     }
   };
+
   // Group messages by date for better organization
   const groupMessagesByDate = (messages: Messagetype[]) => {
     const groupedMessages: { [key: string]: Messagetype[] } = {};
@@ -397,7 +403,7 @@ function ChatScreen() {
                       <ReactionsContainer isCurrentUser={isCurrentUser(msg)}>
                         {Object.entries(msg.reactions).map(([emoji, users]) => (
                           <Chip
-                            title={users.join(", ") || "No users"}
+                            title={users.join(", ")}
                             key={emoji}
                             label={`${emoji} ${
                               users.length > 1 ? users.length : ""

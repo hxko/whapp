@@ -1,7 +1,6 @@
 // src/components/AuthProvider.tsx
 "use client";
 
-import { auth } from "../../firebase"; // Import Firebase authentication
 import { onAuthStateChanged, User } from "firebase/auth"; // Import Firebase auth methods
 import {
   ReactNode,
@@ -12,8 +11,8 @@ import {
 } from "react";
 import { useRouter, usePathname } from "next/navigation"; // Import Next.js navigation hooks
 import Loading from "@/components/Loading"; // Import loading component
-import { doc, updateDoc, Timestamp } from "firebase/firestore"; // Import Firestore methods
-import { db } from "../../firebase"; // Import your Firestore instance
+import { doc, setDoc, Timestamp } from "firebase/firestore"; // Import Firestore methods
+import { db, auth } from "../../firebase"; // Import your Firestore instance
 import { getRedirectResult, GoogleAuthProvider } from "firebase/auth";
 
 // Define the shape of the authentication context
@@ -76,7 +75,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
           router.push("/login");
         } else if (user) {
           const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, { lastSeen: Timestamp.now() });
+          await setDoc(userRef, { lastSeen: Timestamp.now() }, { merge: true });
         }
       });
 

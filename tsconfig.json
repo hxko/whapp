@@ -35,7 +35,8 @@
     ".next/types/**/*.ts",
     "src/app/chat/chat.js",
     "src/app/login/login.js",
-    "next.config.js"
+    "next.config.js",
+    "firebase.js"
   ],
   "exclude": ["node_modules"]
 }
