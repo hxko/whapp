@@ -644,29 +644,29 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
-const ReactionsContainer = styled(Stack)<{ isCurrentUser: boolean }>(
-  ({ theme, isCurrentUser }) => ({
-    alignSelf: isCurrentUser ? "flex-end" : "flex-start",
-    fontSize: "0.8rem",
-    padding: theme.spacing(0.5),
-    display: "flex",
-    flexDirection: "row",
-    gap: theme.spacing(0.5),
-    flexFlow: "wrap",
-    transform: "translateY(-14px)",
-    [theme.breakpoints.up("lg")]: {
-      maxWidth: "70%",
-    },
-  })
-);
+const QuickEmojiPickerContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "isCurrentUser",
+})<{ isCurrentUser?: boolean }>(({ theme, isCurrentUser }) => ({
+  position: "absolute",
+  top: "50%",
+  transform: "translateY(-50%)",
+  zIndex: 1000,
+  right: isCurrentUser ? "200px" : "none",
+  left: isCurrentUser ? "none" : "0px",
+}));
 
-const QuickEmojiPickerContainer = styled(Box)<{ isCurrentUser: boolean }>(
-  ({ theme, isCurrentUser }) => ({
-    position: "absolute",
-    top: "50%",
-    transform: "translateY(-50%)",
-    zIndex: 1000,
-    right: isCurrentUser ? "200px" : "none",
-    left: isCurrentUser ? "none" : "0px",
-  })
-);
+const ReactionsContainer = styled(Stack, {
+  shouldForwardProp: (prop) => prop !== "isCurrentUser",
+})<{ isCurrentUser?: boolean }>(({ theme, isCurrentUser }) => ({
+  alignSelf: isCurrentUser ? "flex-end" : "flex-start",
+  fontSize: "0.8rem",
+  padding: theme.spacing(0.5),
+  display: "flex",
+  flexDirection: "row",
+  gap: theme.spacing(0.5),
+  flexFlow: "wrap",
+  transform: "translateY(-14px)",
+  [theme.breakpoints.up("lg")]: {
+    maxWidth: "70%",
+  },
+}));
