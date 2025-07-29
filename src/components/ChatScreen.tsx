@@ -1,10 +1,5 @@
 import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
-import {
-  sendMessage,
-  fetchMessages,
-  replyToMessage,
-  toggleReaction,
-} from "@utils/utils";
+import { sendMessage, replyToMessage, toggleReaction } from "@utils/utils";
 import { useParams } from "next/navigation";
 import { styled, useTheme } from "@mui/material/styles";
 import {
@@ -23,6 +18,7 @@ import { Messagetype } from "types/types";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import { useAuth } from "@/components/AuthProvider";
 import { useChatPartner } from "@/hooks/useChatPartner";
+import { useMessages } from "@/context/MessageContext";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import Message from "@components/Message";
@@ -52,8 +48,14 @@ function ChatScreen() {
   const chatId = params?.chatId as string; // Use optional chaining to safely access chatId
   const router = useRouter();
 
-  // State variables
-  const [messages, setMessages] = useState<Messagetype[]>([]);
+  // Use MessagesContext instead of local state
+  const { getMessages, subscribeToChatMessages, unsubscribeFromChatMessages } =
+    useMessages();
+
+  // Get messages from context
+  const messages = getMessages(chatId) || [];
+
+  // State variables (removed messages state as it's now from context)
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
@@ -73,15 +75,19 @@ function ChatScreen() {
     error: partnerError,
   } = useChatPartner(chatId);
 
-  // Fetch messages when chatId changes
+  // Subscribe to messages when chatId changes
   useLayoutEffect(() => {
     if (chatId) {
-      const unsubscribe = fetchMessages(chatId, setMessages);
-      return () => unsubscribe();
+      subscribeToChatMessages(chatId);
+
+      // Cleanup function to unsubscribe when component unmounts or chatId changes
+      return () => {
+        unsubscribeFromChatMessages(chatId);
+      };
     } else {
       console.error("Chat ID is undefined");
     }
-  }, [chatId]);
+  }, [chatId, subscribeToChatMessages, unsubscribeFromChatMessages]);
 
   // Scroll to bottom when new messages are added
   useLayoutEffect(() => {
@@ -239,6 +245,7 @@ function ChatScreen() {
     startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
 
     messages.forEach((msg) => {
+      if (!msg.timestamp) return; // skip if no timestamp
       const messageDate = new Date(msg.timestamp.toDate());
       const msgDateOnly = new Date(
         messageDate.getFullYear(),

@@ -1,39 +1,33 @@
 "use client";
-import React from "react";
-import { styled } from "@mui/material/styles"; // Import styled from MUI
-import { Avatar, Box, Typography } from "@mui/material"; // Import MUI components
-import { useRouter } from "next/navigation"; // Use Next.js router for navigation
-import { useChatPartner } from "@/hooks/useChatPartner"; // Import the useChatPartner hook
-import { useEffect, useState } from "react";
-import { getLastMessage, formatTimestamp } from "@/utils/utils"; // Import your new util
-import { Timestamp } from "firebase/firestore";
+import React, { useEffect } from "react";
+import { styled } from "@mui/material/styles";
+import { Avatar, Box, Typography } from "@mui/material";
+import { useRouter } from "next/navigation";
+import { useChatPartner } from "@/hooks/useChatPartner";
+import { useMessages } from "@/context/MessageContext";
+import { formatTimestamp } from "@/utils/utils";
 
-// Define the props for the ChatItem component
+// Props
 interface ChatItemProps {
-  chatId: string; // Unique identifier for the chat
+  chatId: string;
 }
-
-/**
- * ChatItem component displays a single chat item with partner information.
- * It allows navigation to the chat view when clicked.
- */
 
 const ChatItem: React.FC<ChatItemProps> = ({ chatId }) => {
   const router = useRouter();
   const { data: chatPartner, loading, error } = useChatPartner(chatId);
-  const [lastMessage, setLastMessage] = useState<string | null>(null);
-  const [lastTimestamp, setLastTimestamp] = useState<Timestamp | null>(null);
+  const {
+    subscribeToChatMessages,
+    unsubscribeFromChatMessages,
+    getLastMessage,
+  } = useMessages();
 
+  // Subscribe on mount
   useEffect(() => {
-    const loadLastMessage = async () => {
-      const msg = await getLastMessage(chatId);
-      if (msg) {
-        setLastMessage(msg.text);
-        setLastTimestamp(msg.timestamp);
-      }
-    };
-    loadLastMessage();
-  }, [chatId]);
+    subscribeToChatMessages(chatId);
+    return () => unsubscribeFromChatMessages(chatId);
+  }, [chatId, subscribeToChatMessages, unsubscribeFromChatMessages]);
+
+  const lastMessage = getLastMessage(chatId);
 
   const handleClick = () => {
     router.push(`/chat/${chatId}`);
@@ -51,14 +45,14 @@ const ChatItem: React.FC<ChatItemProps> = ({ chatId }) => {
           <ChatPartner variant="body1">
             {chatPartner?.displayName || chatPartner?.email}
           </ChatPartner>
-          {lastTimestamp && (
+          {lastMessage?.timestamp && (
             <TimestampText variant="caption">
-              {formatTimestamp(lastTimestamp)}
+              {formatTimestamp(lastMessage.timestamp)}
             </TimestampText>
           )}
         </TopRow>
         <LastMessage variant="body2">
-          {lastMessage ?? "No messages yet"}
+          {lastMessage?.text ?? "No messages yet"}
         </LastMessage>
       </ChatInfo>
     </ChatItemContainer>

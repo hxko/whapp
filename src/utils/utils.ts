@@ -25,12 +25,12 @@ import CryptoJS from "crypto-js"; // Import the crypto-js library
 const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTOKEY as string; // TODO: Replace with a secure key management solution
 
 // Function to encrypt a message
-const encryptMessage = (message: string): string => {
+export const encryptMessage = (message: string): string => {
   return CryptoJS.AES.encrypt(message, SECRET_KEY).toString();
 };
 
 // Function to decrypt a message
-const decryptMessage = (ciphertext: string): string => {
+export const decryptMessage = (ciphertext: string): string => {
   const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
   return bytes.toString(CryptoJS.enc.Utf8);
 };
@@ -136,29 +136,6 @@ export const sendMessage = async (
   }
 };
 
-// Fetch the latest message from a chat, decrypt it, and return it
-export const getLastMessage = async (
-  chatId: string
-): Promise<{ text: string; timestamp: Timestamp } | null> => {
-  try {
-    const messagesRef = collection(db, `chats/${chatId}/messages`);
-    const q = query(messagesRef, orderBy("timestamp", "desc"), limit(1));
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-      const msg = snapshot.docs[0].data();
-      return {
-        text: decryptMessage(msg.text),
-        timestamp: msg.timestamp ?? Timestamp.now(),
-      };
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Error fetching last message:", error);
-    return null;
-  }
-};
 export const formatTimestamp = (timestamp: Timestamp): string => {
   const date = timestamp.toDate();
   const now = new Date();

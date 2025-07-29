@@ -3,6 +3,7 @@ import { Roboto } from "next/font/google";
 import { ThemeContextProvider } from "@components/ThemeContext";
 import CustomThemeProvider from "@components/ThemeProvider";
 import AuthProvider from "@/components/AuthProvider";
+import { MessagesProvider } from "@context/MessageContext";
 
 const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
@@ -25,7 +26,9 @@ export default function RootLayout({
       <body className={roboto.className}>
         <ThemeContextProvider>
           <CustomThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <MessagesProvider>{children}</MessagesProvider>
+            </AuthProvider>
           </CustomThemeProvider>
         </ThemeContextProvider>
       </body>
