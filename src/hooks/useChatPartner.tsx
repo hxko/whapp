@@ -30,18 +30,28 @@ export const useChatPartner = (
           if (partnerEmail) {
             const userData = await fetchUserData(partnerEmail);
             const avatarUrl = userData?.photoURL;
-            const proxyUrl = `/api/avatarProxy?url=${encodeURIComponent(
-              avatarUrl
-            )}`;
 
-            const avatarResponse = await fetch(proxyUrl);
-            if (!avatarResponse.ok) {
-              throw new Error("Failed to fetch avatar");
+            let photoURL: string | undefined = undefined;
+
+            // Only try to fetch avatar if avatarUrl exists
+            if (avatarUrl) {
+              try {
+                const proxyUrl = `/api/avatarProxy?url=${encodeURIComponent(
+                  avatarUrl
+                )}`;
+                const avatarResponse = await fetch(proxyUrl);
+
+                if (avatarResponse.ok) {
+                  const avatarBlob = await avatarResponse.blob();
+                  photoURL = URL.createObjectURL(avatarBlob);
+                } else {
+                  console.warn("Failed to fetch avatar via proxy");
+                }
+              } catch (avatarError) {
+                console.warn("Error fetching avatar:", avatarError);
+                // photoURL remains undefined, Avatar component will show default
+              }
             }
-
-            const avatarBlob = await avatarResponse.blob();
-            const photoURL = URL.createObjectURL(avatarBlob);
-
             setData({
               email: partnerEmail,
               displayName: userData?.displayName || userData?.name,

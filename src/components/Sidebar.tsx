@@ -20,6 +20,7 @@ import { Chat } from "types/types";
 import { useRouter } from "next/navigation";
 import { Menu, MenuItem, ListItemIcon } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+
 import LogoutIcon from "@mui/icons-material/Logout";
 
 const Sidebar: React.FC = () => {
