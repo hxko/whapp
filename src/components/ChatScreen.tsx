@@ -218,35 +218,50 @@ function ChatScreen() {
       setActiveEmojiPickerId(null);
     }
   };
-
+  // TODO: Show weekdays only for THIS week NOT 7 days back
   // Group messages by date for better organization
-  const groupMessagesByDate = (messages: Messagetype[]) => {
+  const groupMessagesByDate = (messages: Messagetype[], locale = "en-US") => {
     const groupedMessages: { [key: string]: Messagetype[] } = {};
-    const today = new Date();
+    const now = new Date();
+
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+    // Calculate start of the week (Monday)
+    const startOfWeek = new Date(startOfToday);
+    const day = startOfToday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
 
     messages.forEach((msg) => {
-      // Only group top-level messages
-      if (msg.replyTo) return;
-
       const messageDate = new Date(msg.timestamp.toDate());
-      const isToday = messageDate.toDateString() === today.toDateString();
+      const msgDateOnly = new Date(
+        messageDate.getFullYear(),
+        messageDate.getMonth(),
+        messageDate.getDate()
+      );
 
       let label: string;
-      if (isToday) {
-        label = "Today";
-      } else {
-        const diffTime = today.getTime() - messageDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays < 7 && diffDays > 0) {
-          label = messageDate.toLocaleDateString("en-US", { weekday: "long" });
-        } else {
-          label = messageDate.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          });
-        }
+      if (msgDateOnly.getTime() === startOfToday.getTime()) {
+        label = "Today"; // optional: localize this too
+      } else if (msgDateOnly.getTime() === startOfYesterday.getTime()) {
+        label = "Yesterday"; // optional: localize this too
+      } else if (msgDateOnly >= startOfWeek && msgDateOnly < startOfToday) {
+        label = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(
+          messageDate
+        );
+      } else {
+        label = new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }).format(messageDate);
       }
 
       if (!groupedMessages[label]) {
@@ -259,7 +274,12 @@ function ChatScreen() {
     return groupedMessages;
   };
 
-  const groupedMessages = groupMessagesByDate(messages);
+  // TODO: use locale language for everything
+  console.log(navigator.language);
+  const groupedMessages = groupMessagesByDate(
+    messages,
+    navigator.language || "en-US" // NOTE: use locale browser language here
+  );
 
   // Helper function to check if a message is from the current user
   const isCurrentUser = (message: Messagetype) => {
