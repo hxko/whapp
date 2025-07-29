@@ -225,11 +225,13 @@ function ChatScreen() {
     const today = new Date();
 
     messages.forEach((msg) => {
+      // Only group top-level messages
+      if (msg.replyTo) return;
+
       const messageDate = new Date(msg.timestamp.toDate());
       const isToday = messageDate.toDateString() === today.toDateString();
 
       let label: string;
-
       if (isToday) {
         label = "Today";
       } else {
@@ -237,10 +239,8 @@ function ChatScreen() {
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays < 7 && diffDays > 0) {
-          // within the past 7 days (not today)
           label = messageDate.toLocaleDateString("en-US", { weekday: "long" });
         } else {
-          // older than 7 days
           label = messageDate.toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
