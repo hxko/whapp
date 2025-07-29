@@ -1,3 +1,4 @@
+import "@/app/global.css";
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import { ThemeContextProvider } from "@components/ThemeContext";

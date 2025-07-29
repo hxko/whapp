@@ -1,0 +1,23 @@
+/* html,
+body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Roboto, sans-serif;
+} */
+
+/* Container for the whole app */
+/* #app-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  height: 90vh; 
+  max-height: 820px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+} */
