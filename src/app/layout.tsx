@@ -13,7 +13,7 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: "Chatlink",
-  description: "Build with NextJS",
+  description: "Chat smart. Stay private.",
 };
 
 export default function RootLayout({
