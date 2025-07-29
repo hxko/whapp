@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   onSnapshot,
   orderBy,
+  limit,
 } from "firebase/firestore";
 import { db } from "../../firebase"; // Import your Firestore instance
 import EmailValidator from "email-validator"; // Import email validation library
@@ -133,6 +134,52 @@ export const sendMessage = async (
   } catch (error) {
     console.error("Error sending message: ", error);
   }
+};
+
+// Fetch the latest message from a chat, decrypt it, and return it
+export const getLastMessage = async (
+  chatId: string
+): Promise<{ text: string; timestamp: Timestamp } | null> => {
+  try {
+    const messagesRef = collection(db, `chats/${chatId}/messages`);
+    const q = query(messagesRef, orderBy("timestamp", "desc"), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const msg = snapshot.docs[0].data();
+      return {
+        text: decryptMessage(msg.text),
+        timestamp: msg.timestamp ?? Timestamp.now(),
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching last message:", error);
+    return null;
+  }
+};
+export const formatTimestamp = (timestamp: Timestamp): string => {
+  const date = timestamp.toDate();
+  const now = new Date();
+
+  const isToday = date.toDateString() === now.toDateString();
+
+  const isYesterday = (() => {
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    return date.toDateString() === yesterday.toDateString();
+  })();
+
+  if (isToday) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  if (isYesterday) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString();
 };
 
 // Function to fetch messages

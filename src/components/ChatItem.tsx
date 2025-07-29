@@ -4,6 +4,9 @@ import { styled } from "@mui/material/styles"; // Import styled from MUI
 import { Avatar, Box, Typography } from "@mui/material"; // Import MUI components
 import { useRouter } from "next/navigation"; // Use Next.js router for navigation
 import { useChatPartner } from "@/hooks/useChatPartner"; // Import the useChatPartner hook
+import { useEffect, useState } from "react";
+import { getLastMessage, formatTimestamp } from "@/utils/utils"; // Import your new util
+import { Timestamp } from "firebase/firestore";
 
 // Define the props for the ChatItem component
 interface ChatItemProps {
@@ -14,35 +17,49 @@ interface ChatItemProps {
  * ChatItem component displays a single chat item with partner information.
  * It allows navigation to the chat view when clicked.
  */
+
 const ChatItem: React.FC<ChatItemProps> = ({ chatId }) => {
-  const router = useRouter(); // Use Next.js router for navigation
-
-  // Use the useChatPartner hook to fetch chat partner data
+  const router = useRouter();
   const { data: chatPartner, loading, error } = useChatPartner(chatId);
+  const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [lastTimestamp, setLastTimestamp] = useState<Timestamp | null>(null);
 
-  // Handle click event to navigate to the chat view
+  useEffect(() => {
+    const loadLastMessage = async () => {
+      const msg = await getLastMessage(chatId);
+      if (msg) {
+        setLastMessage(msg.text);
+        setLastTimestamp(msg.timestamp);
+      }
+    };
+    loadLastMessage();
+  }, [chatId]);
+
   const handleClick = () => {
-    router.push(`/chat/${chatId}`); // Navigate to the chat view with the chatId
+    router.push(`/chat/${chatId}`);
   };
 
-  // Show loading state while fetching data
-  if (loading) {
-    return <ChatItemContainer>Loading...</ChatItemContainer>;
-  }
-
-  // Show error state if fetching fails
-  if (error) {
+  if (loading) return <ChatItemContainer>Loading...</ChatItemContainer>;
+  if (error)
     return <ChatItemContainer>Error loading chat partner</ChatItemContainer>;
-  }
 
   return (
     <ChatItemContainer onClick={handleClick}>
       <Avatar src={chatPartner?.photoURL} alt={chatPartner?.email} />
       <ChatInfo>
-        <ChatPartner variant="body1">
-          {chatPartner?.displayName || chatPartner?.email}
-        </ChatPartner>
-        {/* You can add any additional information here if needed */}
+        <TopRow>
+          <ChatPartner variant="body1">
+            {chatPartner?.displayName || chatPartner?.email}
+          </ChatPartner>
+          {lastTimestamp && (
+            <TimestampText variant="caption">
+              {formatTimestamp(lastTimestamp)}
+            </TimestampText>
+          )}
+        </TopRow>
+        <LastMessage variant="body2">
+          {lastMessage ?? "No messages yet"}
+        </LastMessage>
       </ChatInfo>
     </ChatItemContainer>
   );
@@ -72,4 +89,23 @@ const ChatInfo = styled(Box)({
 const ChatPartner = styled(Typography)(({ theme }) => ({
   fontWeight: "bold",
   color: theme.palette.text.primary, // Use theme color for text
+}));
+
+const LastMessage = styled(Typography)(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  fontSize: "0.875rem",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+}));
+const TopRow = styled("div")({
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+});
+
+const TimestampText = styled(Typography)(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  fontSize: "0.75rem",
+  whiteSpace: "nowrap",
 }));
