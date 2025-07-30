@@ -95,6 +95,7 @@ const MessageText = styled(Box, {
   flexDirection: "column",
   alignItems: "flex-start",
   padding: theme.spacing(1),
+
   borderRadius: theme.spacing(1.25),
   backgroundColor: isSender
     ? theme.palette.mode === "dark"
@@ -118,6 +119,7 @@ const TextContent = styled(Box)(({ theme }) => ({
   overflowWrap: "break-word",
   wordBreak: "break-word",
   whiteSpace: "pre-wrap",
+  paddingRight: "30px",
 }));
 
 const MetaContainer = styled(Box)(({ theme }) => ({
