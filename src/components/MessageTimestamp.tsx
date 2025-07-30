@@ -7,9 +7,14 @@ interface MessageTimestampProps {
 }
 
 const MessageTimestamp: React.FC<MessageTimestampProps> = ({ timestamp }) => {
-  const date = timestamp.toDate(); // Convert Firebase Timestamp to JavaScript Date
-  const hours = String(date.getHours()).padStart(2, "0"); // Pad hours
-  const minutes = String(date.getMinutes()).padStart(2, "0"); // Pad minutes
+  if (!timestamp) return <TimestampContainer>—</TimestampContainer>;
+
+  // If timestamp is Firestore Timestamp, convert to Date
+  const date: Date =
+    timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
+
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
 
   return (
     <TimestampContainer>

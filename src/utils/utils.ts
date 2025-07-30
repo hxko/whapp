@@ -1,71 +1,55 @@
-// utils.ts
 import {
   collection,
   getDoc,
   doc,
-  deleteDoc,
   getDocs,
   query,
   where,
   addDoc,
   serverTimestamp,
-  updateDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { db } from "../../firebase";
+
 import EmailValidator from "email-validator";
-import { Chat } from "../types/types";
-import { User } from "firebase/auth";
-import { Messagetype } from "types/types";
-import { Timestamp } from "firebase/firestore";
-import CryptoJS from "crypto-js";
+import type { Chat } from "../types/types";
+import type { User } from "firebase/auth";
 
-const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTOKEY as string;
-
-export const encryptMessage = (message: string): string => {
-  return CryptoJS.AES.encrypt(message, SECRET_KEY).toString();
-};
-
-export const decryptMessage = (ciphertext: string): string => {
-  const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
-  return bytes.toString(CryptoJS.enc.Utf8);
-};
-
+// Fetch a specific chat document by ID
 export const getChatById = async (chatId: string): Promise<Chat | null> => {
   try {
     const chatDoc = await getDoc(doc(db, "chats", chatId));
-    if (chatDoc.exists()) {
-      return {
-        id: chatDoc.id,
-        users: chatDoc.data().users,
-        createdAt: chatDoc.data().createdAt,
-        lastMessage: chatDoc.data().lastMessage,
-      } as Chat;
-    }
-    return null;
+    if (!chatDoc.exists()) return null;
+
+    const data = chatDoc.data();
+    return {
+      id: chatDoc.id,
+      users: data.users,
+      createdAt: data.createdAt,
+      lastMessage: data.lastMessage,
+    } as Chat;
   } catch (error) {
     console.error("Error fetching chat by ID:", error);
     return null;
   }
 };
 
+// Fetch user document by email
 export const fetchUserData = async (email: string) => {
   try {
     const usersRef = collection(db, "users");
     const q = query(usersRef, where("email", "==", email));
     const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty) {
-      return querySnapshot.docs[0].data();
-    } else {
-      console.error(`No such user with email: ${email}`);
-      return null;
-    }
+    if (querySnapshot.empty) return null;
+    return querySnapshot.docs[0].data();
   } catch (error) {
-    console.error("Error fetching user data: ", error);
+    console.error("Error fetching user data:", error);
     return null;
   }
 };
 
+// Create a new chat document
 export const createChatInDB = async (
   email: string,
   currentUser: User
@@ -75,24 +59,12 @@ export const createChatInDB = async (
       users: [currentUser.email, email],
       createdAt: serverTimestamp(),
     });
-
     return chatRef.id;
   } catch (error) {
-    console.error("Error creating chat: ", error);
+    console.error("Error creating chat:", error);
   }
 };
-
-export const validateEmail = (email: string): boolean => {
-  return EmailValidator.validate(email);
-};
-
-export const getChatPartner = (
-  chat: Chat,
-  currentUserEmail: string
-): string | null => {
-  return chat.users.find((email) => email !== currentUserEmail) || null;
-};
-
+// confirm chat exists
 export const chatExists = (
   chats: Chat[],
   email: string,
@@ -104,135 +76,31 @@ export const chatExists = (
   });
 };
 
-export const sendMessage = async (
-  chatId: string,
-  sender: string,
-  text: string
-): Promise<Messagetype | void> => {
-  try {
-    const messagesRef = collection(db, `chats/${chatId}/messages`);
-    const encryptedText = encryptMessage(text);
-    const docRef = await addDoc(messagesRef, {
-      sender,
-      text: encryptedText,
-      timestamp: serverTimestamp(),
-    });
+// Validate an email address
+export const validateEmail = (email: string): boolean =>
+  EmailValidator.validate(email);
 
-    return {
-      id: docRef.id,
-      sender,
-      text,
-      timestamp: Timestamp.now(),
-      replyTo: undefined,
-      reactions: {},
-    };
-  } catch (error) {
-    console.error("Error sending message: ", error);
-  }
-};
+// Return the other user in the chat (not the current user)
+export const getChatPartner = (
+  chat: Chat,
+  currentUserEmail: string
+): string | null =>
+  chat.users.find((email) => email !== currentUserEmail) ?? null;
 
+// Format Firestore timestamp for UI display
 export const formatTimestamp = (timestamp: Timestamp): string => {
   const date = timestamp.toDate();
   const now = new Date();
 
-  const isToday = date.toDateString() === now.toDateString();
-
-  const isYesterday = (() => {
-    const yesterday = new Date();
-    yesterday.setDate(now.getDate() - 1);
-    return date.toDateString() === yesterday.toDateString();
-  })();
-
-  if (isToday) {
+  if (date.toDateString() === now.toDateString()) {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
-  if (isYesterday) {
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
     return "Yesterday";
   }
 
   return date.toLocaleDateString();
-};
-
-export const deleteMessage = async (chatId: string, messageId: string) => {
-  try {
-    const messageRef = doc(db, `chats/${chatId}/messages`, messageId);
-
-    const repliesRef = collection(db, `chats/${chatId}/messages`);
-    const q = query(repliesRef, where("replyTo", "==", messageId));
-    const querySnapshot = await getDocs(q);
-
-    const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
-    await Promise.all(deletePromises);
-
-    await deleteDoc(messageRef);
-    console.log("Message and its replies deleted successfully");
-  } catch (error) {
-    console.error("Error deleting message: ", error);
-  }
-};
-
-export const replyToMessage = async (
-  chatId: string,
-  messageId: string,
-  replyMessage: string,
-  sender: string
-): Promise<Messagetype | void> => {
-  try {
-    const messagesRef = collection(db, `chats/${chatId}/messages`);
-    const encryptedText = encryptMessage(replyMessage);
-    const docRef = await addDoc(messagesRef, {
-      sender,
-      text: encryptedText,
-      timestamp: serverTimestamp(),
-      replyTo: messageId,
-    });
-
-    return {
-      id: docRef.id,
-      sender,
-      text: replyMessage,
-      timestamp: Timestamp.now(),
-      replyTo: messageId,
-      reactions: {},
-    };
-  } catch (error) {
-    console.error("Error replying to message: ", error);
-  }
-};
-
-export const toggleReaction = async (
-  chatId: string,
-  messageId: string,
-  emoji: string,
-  userEmail: string
-) => {
-  try {
-    const messageRef = doc(db, `chats/${chatId}/messages`, messageId);
-    const messageSnap = await getDoc(messageRef);
-
-    if (!messageSnap.exists()) return;
-
-    const data = messageSnap.data();
-    const reactions = data.reactions || {};
-    const currentUsers = reactions[emoji] || [];
-    const userHasReacted = currentUsers.includes(userEmail);
-
-    const updatedReactions = {
-      ...reactions,
-      [emoji]: userHasReacted
-        ? currentUsers.filter((email: string) => email !== userEmail)
-        : [...currentUsers, userEmail],
-    };
-
-    Object.keys(updatedReactions).forEach((key) => {
-      if (updatedReactions[key].length === 0) {
-        delete updatedReactions[key];
-      }
-    });
-
-    await updateDoc(messageRef, { reactions: updatedReactions });
-  } catch (error) {
-    console.error("Error toggling emoji reaction: ", error);
-  }
 };

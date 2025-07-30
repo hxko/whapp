@@ -1,5 +1,4 @@
 import "@/app/global.css";
-import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import { ThemeContextProvider } from "@components/ThemeContext";
 import CustomThemeProvider from "@components/ThemeProvider";
@@ -15,10 +14,6 @@ const roboto = Roboto({
 export const metadata = {
   title: "Chatlink",
   description: "Chat smart. Stay private.",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#1E2428" },
-  ],
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -38,6 +33,15 @@ export const metadata = {
   },
   manifest: "/site.webmanifest",
 };
+
+export function generateViewport() {
+  return {
+    themeColor: [
+      { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+      { media: "(prefers-color-scheme: dark)", color: "#1E2428" },
+    ],
+  };
+}
 
 export default function RootLayout({
   children,

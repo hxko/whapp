@@ -15,7 +15,7 @@ import MessageTimestamp from "./MessageTimestamp"; // Component to display messa
 import { Timestamp } from "firebase/firestore"; // Firestore Timestamp type
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // Icon for external links
 import DropdownIcon from "@components/DropdownIcon"; // Import the DropdownIcon component
-import { deleteMessage } from "@/utils/utils"; // Import the deleteMessage function
+import { useMessages } from "@/context/MessageContext";
 
 // Define the structure of the preview data
 interface PreviewData {
@@ -43,6 +43,8 @@ const UrlPreviewComponent: React.FC<UrlPreviewComponentProps> = ({
   messageId,
   onReply,
 }) => {
+  const { deleteMessage } = useMessages();
+
   // State variables for managing preview data and loading/error states
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [loading, setLoading] = useState(true); // Indicates if data is being fetched

@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import MessageObserver from "@components/MessageObserver";
 
 // Material-UI imports grouped by category
 import { styled, useTheme } from "@mui/material/styles";
@@ -29,7 +30,6 @@ import Picker from "@emoji-mart/react";
 import { doc, getDoc } from "firebase/firestore";
 
 // Internal imports - utils and services
-import { sendMessage, replyToMessage, toggleReaction } from "@utils/utils";
 import { db } from "../../firebase";
 
 // Internal imports - components
@@ -73,6 +73,15 @@ function ChatScreen() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const {
+    messagesByChat,
+    sendMessage,
+    replyToMessage,
+    toggleReaction,
+    markMessageAsRead,
+    markMessageAsDelivered,
+  } = useMessages();
+
   // Extract current user email and chat ID from URL params
   const currentUserEmail = user?.email!;
   const chatId = searchParams?.get("chatId");
@@ -94,12 +103,8 @@ function ChatScreen() {
   }
 
   // Message context for real-time message management
-  const {
-    getMessages,
-    subscribeToChatMessages,
-    unsubscribeFromChatMessages,
-    markChatAsRead,
-  } = useMessages();
+  const { getMessages, subscribeToChatMessages, unsubscribeFromChatMessages } =
+    useMessages();
 
   // Get messages from context instead of local state
   const messages = getMessages(chatId) || [];
@@ -126,6 +131,20 @@ function ChatScreen() {
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const quickEmojiPickerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * When the user opens a chat or new messages arrive, this effect:
+   * 1. Marks all messages not yet delivered to this user as "delivered" (adds user to `deliveredTo`).
+   * 2. Marks all messages not yet read by this user as "read" (adds user to `readBy`).
+   * This ensures that message bubbles update with accurate status (like checkmarks),
+   * and Firestore reflects the user's read/delivery state in real time.
+   */
+  // useEffect(() => {
+  //   if (chatId && user?.email && messagesByChat[chatId]?.length) {
+  //     markMessagesAsDelivered(chatId, user.email);
+  //     markMessagesAsRead(chatId, user.email);
+  //   }
+  // }, [chatId, messagesByChat[chatId]?.length, user?.email]);
 
   // ========================================
   // CUSTOM HOOKS FOR DATA FETCHING
@@ -188,19 +207,6 @@ function ChatScreen() {
     subscribeToChatMessages,
     unsubscribeFromChatMessages,
   ]);
-
-  /**
-   * Effect: Mark chat as read when new messages arrive
-   * Updates the user's lastRead timestamp to mark messages as read
-   */
-  useEffect(() => {
-    if (!messages || messages.length === 0 || !user?.email) return;
-
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.timestamp) {
-      markChatAsRead(chatId as string, user.email, lastMessage.timestamp);
-    }
-  }, [messages, chatId, user?.email, markChatAsRead, prevMessageCount]);
 
   /**
    * Effect: Auto-scroll to bottom when new messages arrive
@@ -542,7 +548,13 @@ function ChatScreen() {
               return (
                 <React.Fragment key={msg.id}>
                   {/* ===== MAIN MESSAGE CONTAINER ===== */}
-                  <MessageContainer
+                  <MessageObserver
+                    message={msg}
+                    markAsRead={markMessageAsRead}
+                    markAsDelivered={markMessageAsDelivered}
+                    userEmail={currentUserEmail}
+                    key={msg.id}
+                    chatId={chatId}
                     className={
                       isCurrentUser(msg) ? "current-user" : "other-user"
                     }
@@ -598,8 +610,7 @@ function ChatScreen() {
                         />
                       </QuickEmojiPickerContainer>
                     )}
-                  </MessageContainer>
-
+                  </MessageObserver>
                   {/* ===== MESSAGE REACTIONS DISPLAY ===== */}
                   {msg.reactions &&
                     Object.entries(msg.reactions).length > 0 && (
@@ -737,6 +748,7 @@ const Container = styled(Box)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   height: "100%",
+
   backgroundColor:
     theme.palette.mode === "dark"
       ? theme.palette.background.default
@@ -817,61 +829,6 @@ const StyledChip = styled(Chip)(({ theme }) => ({
       : theme.palette.grey[600],
   color: theme.palette.common.white,
   fontWeight: 500,
-}));
-
-/**
- * Main message container with hover effects and positioning
- * Handles alignment for current user vs other user messages
- * Includes hover effects for emoji reaction button
- */
-const MessageContainer = styled(Box)(({ theme }) => ({
-  display: "flex",
-  flexDirection: "column",
-  marginBottom: theme.spacing(1),
-  marginTop: theme.spacing(1),
-  maxWidth: "90%",
-  [theme.breakpoints.up("lg")]: {
-    maxWidth: "70%",
-  },
-  position: "relative",
-
-  // Emoji button hover effects
-  "& .emoji-hover-button": {
-    opacity: 0,
-    visibility: "hidden",
-    transition: "opacity 0.2s ease, visibility 0.2s ease",
-  },
-
-  "&:hover .emoji-hover-button": {
-    opacity: 1,
-    visibility: "visible",
-  },
-
-  // Positioning for current user messages (right-aligned)
-  "&.current-user": {
-    alignSelf: "flex-end",
-
-    "& .emoji-hover-button": {
-      position: "absolute",
-      top: "50%",
-      left: "-35px",
-      transform: "translateY(-50%)",
-      zIndex: 1,
-    },
-  },
-
-  // Positioning for other user messages (left-aligned)
-  "&.other-user": {
-    alignSelf: "flex-start",
-
-    "& .emoji-hover-button": {
-      position: "absolute",
-      top: "50%",
-      right: "-35px",
-      transform: "translateY(-50%)",
-      zIndex: 1,
-    },
-  },
 }));
 
 /**

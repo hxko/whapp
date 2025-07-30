@@ -16,4 +16,6 @@ export type Messagetype = {
   reactions: {
     [emoji: string]: string[]; // array of user emails who reacted with this emoji
   };
+  readBy?: string[]; // list of users who read the message
+  deliveredTo?: string[]; // track delivery status
 };
