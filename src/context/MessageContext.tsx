@@ -130,25 +130,36 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const newMessages: Messagetype[] = querySnapshot.docs.map((doc) => {
-        const data = doc.data() as Messagetype;
+        const data = doc.data();
         return {
           ...data,
           id: doc.id,
           text: decryptMessage(data.text),
           timestamp: data.timestamp,
-        };
+          replyTo: data.replyTo,
+          reactions: data.reactions || {},
+          readBy: data.readBy || [],
+          deliveredTo: data.deliveredTo || [],
+        } as Messagetype;
       });
-
+      console.log("🔥 Snapshot received", newMessages);
       setMessagesByChat((prev) => {
         const prevMessages = prev[chatId] || [];
+
         const same =
           prevMessages.length === newMessages.length &&
-          prevMessages.every(
-            (m, i) =>
-              m.id === newMessages[i].id && m.text === newMessages[i].text
-          );
+          prevMessages.every((m, i) => {
+            const n = newMessages[i];
+            return (
+              m.id === n.id &&
+              m.text === n.text &&
+              JSON.stringify(m.reactions) === JSON.stringify(n.reactions) &&
+              JSON.stringify(m.readBy) === JSON.stringify(n.readBy) &&
+              JSON.stringify(m.deliveredTo) === JSON.stringify(n.deliveredTo)
+            );
+          });
 
-        if (same) return prev; // Verhindert Re-render
+        if (same) return prev;
 
         return {
           ...prev,
@@ -283,7 +294,6 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
           msg.sender !== userEmail && !(msg.readBy || []).includes(userEmail)
       ).length;
 
-      console.log("getUnreadCount recalculated for:", chatId);
       return count;
     },
     [messagesByChat]
