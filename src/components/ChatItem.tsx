@@ -31,25 +31,16 @@ const ChatItem: React.FC<ChatItemProps> = ({ chatId, onChatClick }) => {
 
   // Debug: unreadCount berechnen und loggen
   const unreadCount = getUnreadCount(chatId, currentUserEmail);
-  console.log(
-    `[ChatItem] unreadCount for chatId=${chatId} user=${currentUserEmail}:`,
-    unreadCount
-  );
 
   useEffect(() => {
-    console.log(`[ChatItem] subscribeToChatMessages for chatId=${chatId}`);
     subscribeToChatMessages(chatId);
 
     return () => {
-      console.log(
-        `[ChatItem] unsubscribeFromChatMessages for chatId=${chatId}`
-      );
       unsubscribeFromChatMessages(chatId);
     };
   }, [chatId, subscribeToChatMessages, unsubscribeFromChatMessages]);
 
   const lastMessage = getLastMessage(chatId);
-  console.log(`[ChatItem] lastMessage for chatId=${chatId}:`, lastMessage);
 
   const handleClick = () => {
     if (onChatClick) {
@@ -60,8 +51,6 @@ const ChatItem: React.FC<ChatItemProps> = ({ chatId, onChatClick }) => {
   if (loading) return <ChatItemContainer>Loading...</ChatItemContainer>;
   if (error)
     return <ChatItemContainer>Error loading chat partner</ChatItemContainer>;
-
-  console.log(`[ChatItem] chatPartner data for chatId=${chatId}:`, chatPartner);
 
   return (
     <ChatItemContainer onClick={handleClick}>
