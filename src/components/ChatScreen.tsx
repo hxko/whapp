@@ -1,5 +1,7 @@
 import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
-import { sendMessage, replyToMessage, toggleReaction } from "@utils/utils";
+import { useRouter, useSearchParams } from "next/navigation";
+
+// Material-UI imports grouped by category
 import { styled, useTheme } from "@mui/material/styles";
 import {
   Button,
@@ -12,44 +14,70 @@ import {
   Typography,
   IconButton,
   Stack,
+  OutlinedInput,
 } from "@mui/material";
-import { Messagetype } from "types/types";
+
+// Material-UI icons
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
-import { useAuth } from "@/components/AuthProvider";
-import { useChatPartner } from "@/hooks/useChatPartner";
-import { useMessages } from "@/context/MessageContext";
-import data from "@emoji-mart/data";
-import Picker from "@emoji-mart/react";
-import Message from "@components/Message";
 import MoreVert from "@mui/icons-material/MoreVert";
 import AttachFile from "@mui/icons-material/AttachFile";
+
+// Third-party library imports
 import TimeAgo from "react-timeago";
-import OutlinedInput from "@mui/material/OutlinedInput";
-import { useRouter } from "next/navigation";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import { doc, getDoc } from "firebase/firestore";
+
+// Internal imports - utils and services
+import { sendMessage, replyToMessage, toggleReaction } from "@utils/utils";
+import { db } from "../../firebase";
+
+// Internal imports - components
+import Message from "@components/Message";
 import UrlPreviewComponent from "@/components/UrlPreviewComponent";
 import ReplyMessage from "@components/ReplyMessage";
 import ReplyPreview from "@components/ReplyPreview";
 import Loading from "@components/Loading";
 import QuickEmojiPicker from "@/components/QuickEmojiPicker";
-import { useSearchParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../firebase";
+
+// Internal imports - hooks and context
+import { useAuth } from "@/components/AuthProvider";
+import { useChatPartner } from "@/hooks/useChatPartner";
+import { useMessages } from "@/context/MessageContext";
+
+// Types
+import { Messagetype } from "types/types";
 
 // Define the type for URL parameters
 export type Params = {
   chatId: string;
 };
 
+/**
+ * ChatScreen Component
+ *
+ * Main chat interface component that handles:
+ * - Real-time message display and sending
+ * - Message reactions and replies
+ * - URL preview rendering
+ * - Chat partner information display
+ * - Message grouping by date
+ */
 function ChatScreen() {
-  // Hooks and context
+  // ========================================
+  // HOOKS AND CONTEXT SETUP
+  // ========================================
+
   const theme = useTheme();
   const { user } = useAuth();
-  const currentUserEmail = user?.email!;
   const searchParams = useSearchParams();
-  const chatId = searchParams?.get("chatId");
   const router = useRouter();
 
-  // Early return if no chatId
+  // Extract current user email and chat ID from URL params
+  const currentUserEmail = user?.email!;
+  const chatId = searchParams?.get("chatId");
+
+  // Early return if no chat is selected
   if (!chatId) {
     return (
       <Box
@@ -65,7 +93,7 @@ function ChatScreen() {
     );
   }
 
-  // Use MessagesContext instead of local state
+  // Message context for real-time message management
   const {
     getMessages,
     subscribeToChatMessages,
@@ -73,60 +101,98 @@ function ChatScreen() {
     markChatAsRead,
   } = useMessages();
 
-  // Get messages from context
+  // Get messages from context instead of local state
   const messages = getMessages(chatId) || [];
 
-  // State variables (removed messages state as it's now from context)
+  // ========================================
+  // STATE MANAGEMENT
+  // ========================================
+
+  // Message input and UI state
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const messageListRef = useRef<HTMLDivElement | null>(null);
-  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
-  const [replyMessage, setReplyMessage] = useState<Messagetype | null>(null); // State to hold the message being replied to
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [replyMessage, setReplyMessage] = useState<Messagetype | null>(null);
   const [activeEmojiPickerId, setActiveEmojiPickerId] = useState<string | null>(
     null
   );
-  const quickEmojiPickerRef = useRef<HTMLDivElement | null>(null);
   const [prevMessageCount, setPrevMessageCount] = useState(0);
 
-  // Fetch chat partner data
+  // ========================================
+  // REFS FOR DOM MANIPULATION
+  // ========================================
+
+  // Refs for scrolling and click-outside detection
+  const messageListRef = useRef<HTMLDivElement | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
+  const quickEmojiPickerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // ========================================
+  // CUSTOM HOOKS FOR DATA FETCHING
+  // ========================================
+
+  // Fetch chat partner information
   const {
     data: chatPartner,
     loading: partnerLoading,
     error: partnerError,
   } = useChatPartner(chatId);
 
-  // Subscribe to messages when chatId changes
-  // Validate access
+  // ========================================
+  // EFFECTS FOR LIFECYCLE MANAGEMENT
+  // ========================================
+
+  /**
+   * Effect: Chat validation and message subscription
+   * Validates user access to the chat and subscribes to real-time messages
+   */
   useEffect(() => {
     if (!chatId || !user?.email) return;
 
     const validateAccess = async () => {
-      const chatRef = doc(db, "chats", chatId);
-      const chatSnap = await getDoc(chatRef);
+      try {
+        const chatRef = doc(db, "chats", chatId);
+        const chatSnap = await getDoc(chatRef);
 
-      if (!chatSnap.exists()) {
-        router.replace("/?error=notfound");
-        return;
+        // Check if chat exists
+        if (!chatSnap.exists()) {
+          router.replace("/?error=notfound");
+          return;
+        }
+
+        // Check if user has access to this chat
+        const chatData = chatSnap.data();
+        if (!chatData.users.includes(user.email)) {
+          router.replace("/?error=unauthorized");
+          return;
+        }
+
+        // Subscribe to real-time messages
+        subscribeToChatMessages(chatId);
+      } catch (error) {
+        console.error("Error validating chat access:", error);
+        router.replace("/?error=general");
       }
-
-      const chatData = chatSnap.data();
-      if (!chatData.users.includes(user.email)) {
-        router.replace("/?error=unauthorized");
-        return;
-      }
-
-      subscribeToChatMessages(chatId);
     };
 
     validateAccess();
 
+    // Cleanup: Unsubscribe when component unmounts or chatId changes
     return () => {
       unsubscribeFromChatMessages(chatId);
     };
-  }, [chatId, user?.email]);
+  }, [
+    chatId,
+    user?.email,
+    router,
+    subscribeToChatMessages,
+    unsubscribeFromChatMessages,
+  ]);
 
-  // 📌 Reset unread count by updating lastRead timestamp
+  /**
+   * Effect: Mark chat as read when new messages arrive
+   * Updates the user's lastRead timestamp to mark messages as read
+   */
   useEffect(() => {
     if (!messages || messages.length === 0 || !user?.email) return;
 
@@ -134,22 +200,27 @@ function ChatScreen() {
     if (lastMessage?.timestamp) {
       markChatAsRead(chatId as string, user.email, lastMessage.timestamp);
     }
-  }, [messages, chatId, user?.email, prevMessageCount]);
+  }, [messages, chatId, user?.email, markChatAsRead, prevMessageCount]);
 
-  // Scroll to bottom when new messages are added
+  /**
+   * Effect: Auto-scroll to bottom when new messages arrive
+   * Ensures the chat always shows the latest messages
+   */
   useLayoutEffect(() => {
-    const el = messageListRef.current;
+    const messageContainer = messageListRef.current;
 
-    // Only scroll if the number of messages increased (new message added)
-    if (el && messages.length > prevMessageCount) {
-      el.scrollTop = el.scrollHeight;
+    if (messageContainer) {
+      messageContainer.scrollTop = messageContainer.scrollHeight;
     }
 
-    // Update the previous count
+    // Track message count for read status updates
     setPrevMessageCount(messages.length);
-  }, [messages, prevMessageCount]);
+  }, [messages.length, chatId]);
 
-  // Handle click outside of emoji picker to close it
+  /**
+   * Effect: Handle click outside emoji picker to close it
+   * Provides better UX by closing picker when user clicks elsewhere
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -162,8 +233,6 @@ function ChatScreen() {
 
     if (showEmojiPicker) {
       document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
@@ -171,7 +240,10 @@ function ChatScreen() {
     };
   }, [showEmojiPicker]);
 
-  // handling click outside of QuickEmojiPicker
+  /**
+   * Effect: Handle click outside quick emoji picker to close it
+   * Similar to above but for the quick reaction picker
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -184,8 +256,6 @@ function ChatScreen() {
 
     if (activeEmojiPickerId) {
       document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
@@ -193,85 +263,105 @@ function ChatScreen() {
     };
   }, [activeEmojiPickerId]);
 
-  // handling send message
+  // ========================================
+  // EVENT HANDLERS
+  // ========================================
+
+  /**
+   * Handle sending a new message or reply
+   * Supports both regular messages and replies to existing messages
+   */
   const handleSendMessage = async () => {
-    if (newMessage.trim() && chatId) {
-      const senderEmail = currentUserEmail;
-      if (senderEmail) {
-        // If replying to a message, include reply information
-        if (replyMessage) {
-          await replyToMessage(
-            chatId,
-            replyMessage.id,
-            newMessage,
-            senderEmail
-          );
-          setReplyMessage(null); // Clear the reply message after sending
-        } else {
-          await sendMessage(chatId, senderEmail, newMessage);
-        }
-        setNewMessage(""); // Clear the input field after sending
+    if (!newMessage.trim() || !chatId || !currentUserEmail) {
+      console.error("Missing required data for sending message");
+      return;
+    }
+
+    try {
+      if (replyMessage) {
+        // Send as a reply to an existing message
+        await replyToMessage(
+          chatId,
+          replyMessage.id,
+          newMessage,
+          currentUserEmail
+        );
+        setReplyMessage(null); // Clear reply state
       } else {
-        console.error("User  is not logged in or email is not available.");
+        // Send as a regular message
+        await sendMessage(chatId, currentUserEmail, newMessage);
       }
+
+      // Clear input after successful send
+      setNewMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
     }
   };
 
-  // Handle key down event for sending messages
+  /**
+   * Handle Enter key press to send message
+   * Provides keyboard shortcut for better UX
+   */
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault(); // Prevent default behavior of Enter key
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
       handleSendMessage();
     }
   };
 
-  // Handle emoji selection
+  /**
+   * Handle emoji selection from picker
+   * Appends selected emoji to the current message
+   */
   const handleEmojiSelect = (emoji: { native: string }) => {
-    setNewMessage((prev) => prev + emoji.native); // Append selected emoji to the message
+    setNewMessage((prev) => prev + emoji.native);
   };
 
-  // Loading and error states for chat partner
-  if (partnerLoading) {
-    return <Loading />;
-  }
-
-  if (partnerError) {
-    return <Box>Error loading chat partner: {partnerError}</Box>;
-  }
-
-  // reply to a message
+  /**
+   * Handle reply action on a message
+   * Sets up reply state and focuses input
+   */
   const handleReply = (message: Messagetype) => {
-    setReplyMessage(message); // Set the message to reply to
-    // Focus message input
+    setReplyMessage(message);
+
+    // Focus input after state update
     setTimeout(() => {
       inputRef.current?.focus();
-    }, 0); // wait one tick to ensure render completes
+    }, 0);
   };
 
-  // Function to calculate total reactions
-  const calculateTotalReactions = (reactions: { [key: string]: string[] }) => {
-    return Object.values(reactions).reduce(
-      (total, users) => total + users.length,
-      0
-    );
-  };
-
-  //select reaction emoji
+  /**
+   * Handle reaction selection on a message
+   * Toggles emoji reactions on messages
+   */
   const handleSelectReaction = async (
     messageId: string,
     emoji: { native: string }
   ) => {
-    if (chatId && user?.email) {
+    if (!chatId || !user?.email) return;
+
+    try {
       await toggleReaction(chatId, messageId, emoji.native, user.email);
       setActiveEmojiPickerId(null);
+    } catch (error) {
+      console.error("Error toggling reaction:", error);
     }
   };
-  // TODO: Show weekdays only for THIS week NOT 7 days back
-  // Group messages by date for better organization
+
+  // ========================================
+  // UTILITY FUNCTIONS
+  // ========================================
+
+  /**
+   * Group messages by date for better organization
+   * Creates date labels like "Today", "Yesterday", weekdays, or full dates
+   */
   const groupMessagesByDate = (messages: Messagetype[], locale = "en-US") => {
     const groupedMessages: { [key: string]: Messagetype[] } = {};
     const now = new Date();
 
+    // Calculate date boundaries
     const startOfToday = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -280,14 +370,15 @@ function ChatScreen() {
     const startOfYesterday = new Date(startOfToday);
     startOfYesterday.setDate(startOfYesterday.getDate() - 1);
 
-    // Calculate start of the week (Monday)
+    // Calculate start of the current week (Monday)
     const startOfWeek = new Date(startOfToday);
     const day = startOfToday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     const diffToMonday = day === 0 ? -6 : 1 - day;
     startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
 
     messages.forEach((msg) => {
-      if (!msg.timestamp) return; // skip if no timestamp
+      if (!msg.timestamp) return; // Skip messages without timestamps
+
       const messageDate = new Date(msg.timestamp.toDate());
       const msgDateOnly = new Date(
         messageDate.getFullYear(),
@@ -295,17 +386,19 @@ function ChatScreen() {
         messageDate.getDate()
       );
 
+      // Determine appropriate date label
       let label: string;
-
       if (msgDateOnly.getTime() === startOfToday.getTime()) {
-        label = "Today"; // optional: localize this too
+        label = "Today";
       } else if (msgDateOnly.getTime() === startOfYesterday.getTime()) {
-        label = "Yesterday"; // optional: localize this too
+        label = "Yesterday";
       } else if (msgDateOnly >= startOfWeek && msgDateOnly < startOfToday) {
+        // Show weekday name for current week
         label = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(
           messageDate
         );
       } else {
+        // Show full date for older messages
         label = new Intl.DateTimeFormat(locale, {
           year: "numeric",
           month: "long",
@@ -313,28 +406,39 @@ function ChatScreen() {
         }).format(messageDate);
       }
 
+      // Group messages under the appropriate label
       if (!groupedMessages[label]) {
         groupedMessages[label] = [];
       }
-
       groupedMessages[label].push(msg);
     });
 
     return groupedMessages;
   };
 
-  // TODO: use locale language for everything
-  console.log(navigator.language);
-  const groupedMessages = groupMessagesByDate(
-    messages,
-    navigator.language || "en-US" // NOTE: use locale browser language here
-  );
-
-  // Helper function to check if a message is from the current user
+  /**
+   * Check if a message is from the current user
+   * Used for message alignment and styling
+   */
   const isCurrentUser = (message: Messagetype) => {
     return message.sender === currentUserEmail;
   };
 
+  /**
+   * Calculate total number of reactions on a message
+   * Currently unused but available for future features
+   */
+  const calculateTotalReactions = (reactions: { [key: string]: string[] }) => {
+    return Object.values(reactions).reduce(
+      (total, users) => total + users.length,
+      0
+    );
+  };
+
+  /**
+   * Render message body with URL preview support
+   * Handles both regular text messages and URL previews
+   */
   const renderMessageBody = (msg: Messagetype) => {
     const isUrl = isValidUrl(msg.text);
 
@@ -353,9 +457,44 @@ function ChatScreen() {
     }
   };
 
+  // ========================================
+  // LOADING AND ERROR STATES
+  // ========================================
+
+  if (partnerLoading) {
+    return <Loading />;
+  }
+
+  if (partnerError) {
+    return (
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        height="100%"
+      >
+        <Typography color="error">
+          Error loading chat partner: {partnerError}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // ========================================
+  // DATA PREPARATION FOR RENDERING
+  // ========================================
+
+  // Group messages by date using browser locale
+  const userLocale = navigator.language || "en-US";
+  const groupedMessages = groupMessagesByDate(messages, userLocale);
+
+  // ========================================
+  // MAIN COMPONENT RENDER
+  // ========================================
+
   return (
     <Container>
-      {/* AppBar with chat partner information */}
+      {/* ===== CHAT HEADER WITH PARTNER INFO ===== */}
       <AppBar position="static">
         <Toolbar>
           <Avatar src={chatPartner?.photoURL} alt={chatPartner?.email} />
@@ -366,7 +505,7 @@ function ChatScreen() {
             <Typography variant="body2" color={theme.palette.text.secondary}>
               Last active:{" "}
               {chatPartner?.lastSeen ? (
-                <TimeAgo date={chatPartner?.lastSeen.toDate()} />
+                <TimeAgo date={chatPartner.lastSeen.toDate()} />
               ) : (
                 "Unknown"
               )}
@@ -384,30 +523,31 @@ function ChatScreen() {
         </Toolbar>
       </AppBar>
 
-      {/* Message list */}
-
-      {/* Message list */}
+      {/* ===== MESSAGE LIST WITH DATE GROUPING ===== */}
       <MessageList ref={messageListRef}>
-        {Object.entries(groupedMessages).map(([label, msgs]) => (
-          <LabelContainer key={label}>
-            <StyledChip label={label} variant="filled" />
-            {msgs.map((msg) => {
-              // Only render top-level messages (i.e., not replies)
+        {Object.entries(groupedMessages).map(([dateLabel, messagesInGroup]) => (
+          <LabelContainer key={dateLabel}>
+            {/* Date separator chip */}
+            <StyledChip label={dateLabel} variant="filled" />
+
+            {/* Messages for this date */}
+            {messagesInGroup.map((msg) => {
+              // Skip reply messages - they're rendered under their parent messages
               if (msg.replyTo) return null;
 
+              // Find all replies to this message
               const replies = messages.filter((m) => m.replyTo === msg.id);
               const isUrl = isValidUrl(msg.text);
 
               return (
                 <React.Fragment key={msg.id}>
-                  {/* Render URL preview or regular message */}
+                  {/* ===== MAIN MESSAGE CONTAINER ===== */}
                   <MessageContainer
                     className={
                       isCurrentUser(msg) ? "current-user" : "other-user"
                     }
-                    // Remove onMouseEnter and onMouseLeave - CSS handles this now
                   >
-                    {/* Render URL preview or regular message */}
+                    {/* Message content - either URL preview or regular message */}
                     {isUrl && chatId ? (
                       <UrlPreviewComponent
                         url={msg.text}
@@ -419,15 +559,15 @@ function ChatScreen() {
                     ) : (
                       <Message
                         message={msg}
-                        chatId={chatId!}
+                        chatId={chatId}
                         onReply={handleReply}
                       />
                     )}
 
-                    {/* Emoji Button – now uses CSS class for hover behavior */}
+                    {/* ===== EMOJI REACTION BUTTON ===== */}
                     <IconButton
                       size="small"
-                      className="emoji-hover-button" // Add this class
+                      className="emoji-hover-button"
                       onClick={() =>
                         setActiveEmojiPickerId(
                           activeEmojiPickerId === msg.id ? null : msg.id
@@ -444,7 +584,7 @@ function ChatScreen() {
                       <EmojiEmotionsIcon fontSize="small" />
                     </IconButton>
 
-                    {/* Quick reactionEmoji Picker – positioned next to emoji button */}
+                    {/* ===== QUICK EMOJI PICKER DROPDOWN ===== */}
                     {activeEmojiPickerId === msg.id && (
                       <QuickEmojiPickerContainer
                         ref={quickEmojiPickerRef}
@@ -459,14 +599,15 @@ function ChatScreen() {
                       </QuickEmojiPickerContainer>
                     )}
                   </MessageContainer>
-                  {/* Reactions – Bottom Right */}
+
+                  {/* ===== MESSAGE REACTIONS DISPLAY ===== */}
                   {msg.reactions &&
                     Object.entries(msg.reactions).length > 0 && (
                       <ReactionsContainer isCurrentUser={isCurrentUser(msg)}>
                         {Object.entries(msg.reactions).map(([emoji, users]) => (
                           <Chip
-                            title={users.join(", ")}
                             key={emoji}
+                            title={users.join(", ")} // Tooltip showing who reacted
                             label={`${emoji} ${
                               users.length > 1 ? users.length : ""
                             }`}
@@ -486,17 +627,10 @@ function ChatScreen() {
                             }
                           />
                         ))}
-                        {/* Total Reactions Count TODO*/}
-                        {/* <Typography
-                          variant="caption"
-                          sx={{ alignSelf: "center" }}
-                        >
-                          {calculateTotalReactions(msg.reactions)}
-                        </Typography> */}
                       </ReactionsContainer>
                     )}
 
-                  {/* Render replies */}
+                  {/* ===== REPLY MESSAGES ===== */}
                   {replies.map((reply) => {
                     const originalMessage = messages.find(
                       (m) => m.id === reply.replyTo
@@ -521,8 +655,7 @@ function ChatScreen() {
         ))}
       </MessageList>
 
-      {/* Render the reply message if it exists */}
-      {/* TODO: dont render timestamp, use 100% width, use padding or margins for UrlPreviewComponent */}
+      {/* ===== REPLY PREVIEW BANNER ===== */}
       {replyMessage && (
         <ReplyPreview
           message={replyMessage}
@@ -531,7 +664,7 @@ function ChatScreen() {
         />
       )}
 
-      {/* Input area for new messages */}
+      {/* ===== MESSAGE INPUT AREA ===== */}
       <InputContainer>
         <OutlinedInput
           inputRef={inputRef}
@@ -557,7 +690,7 @@ function ChatScreen() {
         </Button>
       </InputContainer>
 
-      {/* Emoji picker */}
+      {/* ===== FULL EMOJI PICKER OVERLAY ===== */}
       {showEmojiPicker && (
         <EmojiPickerContainer ref={emojiPickerRef}>
           <Picker data={data} onEmojiSelect={handleEmojiSelect} />
@@ -567,8 +700,15 @@ function ChatScreen() {
   );
 }
 
-// Function to validate if a string is a URL
-const isValidUrl = (string: string) => {
+// ========================================
+// UTILITY FUNCTIONS (OUTSIDE COMPONENT)
+// ========================================
+
+/**
+ * Validate if a string is a valid URL
+ * Uses regex to check for various URL formats including HTTP/HTTPS, localhost, and IP addresses
+ */
+const isValidUrl = (string: string): boolean => {
   const pattern = new RegExp(
     "^(https?:\\/\\/)?" + // protocol
       "((([a-z0-9\\-]+\\.)+[a-z]{2,})|" + // domain name
@@ -577,15 +717,22 @@ const isValidUrl = (string: string) => {
       "\\[?[a-f0-9:\\.]+\\])" + // IPv6
       "(\\:\\d+)?(\\/[-a-z0-9%_.~+]*)*" + // port and path
       "(\\?[;&a-z0-9%_.~+=-]*)?" + // query string
-      "(\\#[-a-z0-9_]*)?$",
+      "(\\#[-a-z0-9_]*)?$", // fragment locator
     "i"
-  ); // fragment locator
+  );
   return !!pattern.test(string);
 };
 
 export default ChatScreen;
 
-// Styled components for layout and styling
+// ========================================
+// STYLED COMPONENTS
+// ========================================
+
+/**
+ * Main container for the entire chat interface
+ * Uses flexbox for proper layout structure
+ */
 const Container = styled(Box)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
@@ -596,6 +743,10 @@ const Container = styled(Box)(({ theme }) => ({
       : theme.palette.grey[100],
 }));
 
+/**
+ * Scrollable container for the message list
+ * Includes custom scrollbar styling for better UX
+ */
 const MessageList = styled(Box)(({ theme }) => ({
   flex: 1,
   height: "100%",
@@ -605,25 +756,38 @@ const MessageList = styled(Box)(({ theme }) => ({
     theme.palette.mode === "dark"
       ? theme.palette.background.paper
       : theme.palette.grey[200],
+  // Hide scrollbar for cleaner look
   "&::-webkit-scrollbar": {
     display: "none",
   },
   scrollbarWidth: "none",
 }));
 
+/**
+ * Container for the message input area
+ * Fixed at bottom of chat interface
+ */
 const InputContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   padding: theme.spacing(2),
   background: theme.palette.background.paper,
 }));
 
+/**
+ * Positioned container for the emoji picker overlay
+ * Appears above the input area when activated
+ */
 const EmojiPickerContainer = styled(Box)(({ theme }) => ({
   position: "absolute",
   bottom: "60px",
-  marginLef: theme.spacing(2),
+  marginLeft: theme.spacing(2),
   zIndex: 1000,
 }));
 
+/**
+ * Container for date label chips
+ * Centers the date separators in the message flow
+ */
 const LabelContainer = styled(Box)(() => ({
   display: "flex",
   flexDirection: "column",
@@ -631,82 +795,89 @@ const LabelContainer = styled(Box)(() => ({
   margin: "10px 0",
 }));
 
+/**
+ * Container for header action icons
+ * Positioned on the right side of the chat header
+ */
 const IconContainer = styled(Box)(() => ({
   display: "flex",
   alignItems: "center",
   marginLeft: "auto",
 }));
 
+/**
+ * Styled date separator chip
+ * Provides visual separation between message groups
+ */
 const StyledChip = styled(Chip)(({ theme }) => ({
   margin: "10px 0",
   backgroundColor:
     theme.palette.mode === "dark"
-      ? theme.palette.grey[700] // Darker background for better contrast
-      : theme.palette.grey[600], // Darker background for better contrast
+      ? theme.palette.grey[700]
+      : theme.palette.grey[600],
   color: theme.palette.common.white,
-  fontWeight: 500, // Slightly bolder text for better readability
+  fontWeight: 500,
 }));
 
+/**
+ * Main message container with hover effects and positioning
+ * Handles alignment for current user vs other user messages
+ * Includes hover effects for emoji reaction button
+ */
 const MessageContainer = styled(Box)(({ theme }) => ({
   display: "flex",
-  flexDirection: "column", // Stack messages vertically
+  flexDirection: "column",
   marginBottom: theme.spacing(1),
   marginTop: theme.spacing(1),
   maxWidth: "90%",
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
   },
-  position: "relative", // Important for absolute positioning of emoji button
+  position: "relative",
 
-  // Hide emoji button by default
+  // Emoji button hover effects
   "& .emoji-hover-button": {
     opacity: 0,
     visibility: "hidden",
     transition: "opacity 0.2s ease, visibility 0.2s ease",
   },
 
-  // Show emoji button on hover
   "&:hover .emoji-hover-button": {
     opacity: 1,
     visibility: "visible",
   },
 
-  // Position emoji button for current user (left side of message)
-  "&.current-user .emoji-hover-button": {
-    position: "absolute",
-    top: "50%",
-    left: "-35px", // Position to the left of the message
-    transform: "translateY(-50%)",
-    zIndex: 1,
-  },
-
-  // Position emoji button for other user (right side of message)
-  "&.other-user .emoji-hover-button": {
-    position: "absolute",
-    top: "50%",
-    right: "-35px", // Position to the right of the message
-    transform: "translateY(-50%)",
-    zIndex: 1,
-  },
-  // Align current user messages to the right
+  // Positioning for current user messages (right-aligned)
   "&.current-user": {
     alignSelf: "flex-end",
+
+    "& .emoji-hover-button": {
+      position: "absolute",
+      top: "50%",
+      left: "-35px",
+      transform: "translateY(-50%)",
+      zIndex: 1,
+    },
   },
 
-  // Align other user messages to the left
+  // Positioning for other user messages (left-aligned)
   "&.other-user": {
     alignSelf: "flex-start",
-  },
-  // Triangle tail pointing right
-  "&.other-user::before": {
-    right: `-${theme.spacing(1)}`,
-    borderWidth: `${theme.spacing(1)} 0 ${theme.spacing(1)} ${theme.spacing(
-      1
-    )}`,
-    borderColor: `transparent transparent transparent ${theme.palette.primary.main}`,
+
+    "& .emoji-hover-button": {
+      position: "absolute",
+      top: "50%",
+      right: "-35px",
+      transform: "translateY(-50%)",
+      zIndex: 1,
+    },
   },
 }));
 
+/**
+ * Container for the quick emoji picker dropdown
+ * Positioned relative to the message based on sender
+ */
 const QuickEmojiPickerContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "isCurrentUser",
 })<{ isCurrentUser?: boolean }>(({ theme, isCurrentUser }) => ({
@@ -718,6 +889,10 @@ const QuickEmojiPickerContainer = styled(Box, {
   left: isCurrentUser ? "none" : "0px",
 }));
 
+/**
+ * Container for message reaction chips
+ * Aligned based on message sender and supports wrapping
+ */
 const ReactionsContainer = styled(Stack, {
   shouldForwardProp: (prop) => prop !== "isCurrentUser",
 })<{ isCurrentUser?: boolean }>(({ theme, isCurrentUser }) => ({
@@ -728,7 +903,7 @@ const ReactionsContainer = styled(Stack, {
   flexDirection: "row",
   gap: theme.spacing(0.5),
   flexFlow: "wrap",
-  transform: "translateY(-14px)",
+  transform: "translateY(-14px)", // Slight overlap with message
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
   },
