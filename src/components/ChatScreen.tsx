@@ -1,6 +1,5 @@
 import React, { useLayoutEffect, useState, useRef, useEffect } from "react";
 import { sendMessage, replyToMessage, toggleReaction } from "@utils/utils";
-import { useParams } from "next/navigation";
 import { styled, useTheme } from "@mui/material/styles";
 import {
   Button,
@@ -26,13 +25,15 @@ import MoreVert from "@mui/icons-material/MoreVert";
 import AttachFile from "@mui/icons-material/AttachFile";
 import TimeAgo from "react-timeago";
 import OutlinedInput from "@mui/material/OutlinedInput";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import UrlPreviewComponent from "@/components/UrlPreviewComponent";
 import ReplyMessage from "@components/ReplyMessage";
 import ReplyPreview from "@components/ReplyPreview";
 import Loading from "@components/Loading";
 import QuickEmojiPicker from "@/components/QuickEmojiPicker";
+import { useSearchParams } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase";
 
 // Define the type for URL parameters
 export type Params = {
@@ -44,13 +45,33 @@ function ChatScreen() {
   const theme = useTheme();
   const { user } = useAuth();
   const currentUserEmail = user?.email!;
-  const params = useParams<Params>(); // Get params from the router
-  const chatId = params?.chatId as string; // Use optional chaining to safely access chatId
+  const searchParams = useSearchParams();
+  const chatId = searchParams?.get("chatId");
   const router = useRouter();
 
+  // Early return if no chatId
+  if (!chatId) {
+    return (
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        height="100%"
+      >
+        <Typography variant="h6" color="text.secondary">
+          No chat selected
+        </Typography>
+      </Box>
+    );
+  }
+
   // Use MessagesContext instead of local state
-  const { getMessages, subscribeToChatMessages, unsubscribeFromChatMessages } =
-    useMessages();
+  const {
+    getMessages,
+    subscribeToChatMessages,
+    unsubscribeFromChatMessages,
+    markChatAsRead,
+  } = useMessages();
 
   // Get messages from context
   const messages = getMessages(chatId) || [];
@@ -76,18 +97,44 @@ function ChatScreen() {
   } = useChatPartner(chatId);
 
   // Subscribe to messages when chatId changes
-  useLayoutEffect(() => {
-    if (chatId) {
-      subscribeToChatMessages(chatId);
+  // Validate access
+  useEffect(() => {
+    if (!chatId || !user?.email) return;
 
-      // Cleanup function to unsubscribe when component unmounts or chatId changes
-      return () => {
-        unsubscribeFromChatMessages(chatId);
-      };
-    } else {
-      console.error("Chat ID is undefined");
+    const validateAccess = async () => {
+      const chatRef = doc(db, "chats", chatId);
+      const chatSnap = await getDoc(chatRef);
+
+      if (!chatSnap.exists()) {
+        router.replace("/?error=notfound");
+        return;
+      }
+
+      const chatData = chatSnap.data();
+      if (!chatData.users.includes(user.email)) {
+        router.replace("/?error=unauthorized");
+        return;
+      }
+
+      subscribeToChatMessages(chatId);
+    };
+
+    validateAccess();
+
+    return () => {
+      unsubscribeFromChatMessages(chatId);
+    };
+  }, [chatId, user?.email]);
+
+  // 📌 Reset unread count by updating lastRead timestamp
+  useEffect(() => {
+    if (!messages || messages.length === 0 || !user?.email) return;
+
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.timestamp) {
+      markChatAsRead(chatId as string, user.email, lastMessage.timestamp);
     }
-  }, [chatId, subscribeToChatMessages, unsubscribeFromChatMessages]);
+  }, [messages, chatId, user?.email, prevMessageCount]);
 
   // Scroll to bottom when new messages are added
   useLayoutEffect(() => {
@@ -181,11 +228,6 @@ function ChatScreen() {
   // Handle emoji selection
   const handleEmojiSelect = (emoji: { native: string }) => {
     setNewMessage((prev) => prev + emoji.native); // Append selected emoji to the message
-  };
-
-  // Navigate back to the previous screen
-  const handleBackClick = () => {
-    router.push("/");
   };
 
   // Loading and error states for chat partner
@@ -316,9 +358,6 @@ function ChatScreen() {
       {/* AppBar with chat partner information */}
       <AppBar position="static">
         <Toolbar>
-          <BackButton onClick={handleBackClick}>
-            <ArrowBackIcon />
-          </BackButton>
           <Avatar src={chatPartner?.photoURL} alt={chatPartner?.email} />
           <Box sx={{ marginLeft: 2 }}>
             <Typography variant="body1" fontWeight="bold">
@@ -608,19 +647,12 @@ const StyledChip = styled(Chip)(({ theme }) => ({
   fontWeight: 500, // Slightly bolder text for better readability
 }));
 
-const BackButton = styled(IconButton)(({ theme }) => ({
-  display: "inline-flex", // Show by default
-  [theme.breakpoints.up("md")]: {
-    display: "none", // Hide on large screens and up
-  },
-}));
-
 const MessageContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   flexDirection: "column", // Stack messages vertically
   marginBottom: theme.spacing(1),
   marginTop: theme.spacing(1),
-
+  maxWidth: "90%",
   [theme.breakpoints.up("lg")]: {
     maxWidth: "70%",
   },
@@ -664,6 +696,14 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   // Align other user messages to the left
   "&.other-user": {
     alignSelf: "flex-start",
+  },
+  // Triangle tail pointing right
+  "&.other-user::before": {
+    right: `-${theme.spacing(1)}`,
+    borderWidth: `${theme.spacing(1)} 0 ${theme.spacing(1)} ${theme.spacing(
+      1
+    )}`,
+    borderColor: `transparent transparent transparent ${theme.palette.primary.main}`,
   },
 }));
 

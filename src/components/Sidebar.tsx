@@ -20,14 +20,23 @@ import { Chat } from "types/types";
 import { useRouter } from "next/navigation";
 import { Menu, MenuItem, ListItemIcon } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-
 import LogoutIcon from "@mui/icons-material/Logout";
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onChatSelect?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onChatSelect }) => {
   const { user, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const chats = useChats(user?.email || "");
   const router = useRouter();
+
+  const handleChatClick = (chatId: string) => {
+    // Use URL params instead of route navigation
+    router.push(`/?chatId=${chatId}`);
+    onChatSelect?.(); // Call the callback to close mobile drawer
+  };
 
   // Function to prompt for email input
   const promptForEmail = (): string | null => {
@@ -39,7 +48,7 @@ const Sidebar: React.FC = () => {
   // Function to create a new chat
   const createChat = async (): Promise<void> => {
     const email = promptForEmail();
-    if (!email || !user) return alert("User  is not authenticated.");
+    if (!email || !user) return alert("User is not authenticated.");
 
     // Validate email and check if user exists
     if (!validateEmail(email) || email === user.email) {
@@ -47,14 +56,15 @@ const Sidebar: React.FC = () => {
     }
 
     const userExists = await fetchUserData(email);
-    if (!userExists) return alert(`User  with email ${email} does not exist.`);
+    if (!userExists) return alert(`User with email ${email} does not exist.`);
     if (chatExists(chats, email, user.email || "")) {
       return alert(`A chat with ${email} already exists.`);
     }
 
-    // Create a new chat and navigate to it
+    // Create a new chat and navigate to it using URL params
     const chatId = await createChatInDB(email, user);
-    router.push(`/chat/${chatId}`);
+    router.push(`/?chatId=${chatId}`);
+    onChatSelect?.(); // Close mobile drawer if open
   };
 
   // Function to handle user sign out
@@ -181,7 +191,7 @@ const Sidebar: React.FC = () => {
         Start a new chat
       </SidebarButton>
       <ChatListContainer>
-        <ChatList chats={filteredChats} />
+        <ChatList chats={filteredChats} onChatClick={handleChatClick} />
       </ChatListContainer>
       <Footer />
     </Container>

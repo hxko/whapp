@@ -12,10 +12,12 @@ interface Chat {
 
 interface ChatListProps {
   chats: Chat[]; // Array of chat objects
+  onChatClick?: (chatId: string) => void; // Add the onChatClick prop
 }
 
-const ChatList: React.FC<ChatListProps> = ({ chats }) => {
+const ChatList: React.FC<ChatListProps> = ({ chats, onChatClick }) => {
   const { user } = useAuth(); // Access user from AuthProvider
+
   return (
     <ChatsContainer>
       {chats.map((chat) => {
@@ -28,10 +30,12 @@ const ChatList: React.FC<ChatListProps> = ({ chats }) => {
         if (!chatPartnerEmail) {
           return null; // Skip rendering if no chat partner is found
         }
+
         return (
           <ChatItem
             key={chat.id}
             chatId={chat.id} // Pass the chat ID for navigation
+            onChatClick={onChatClick} // Pass the onChatClick function to ChatItem
           />
         );
       })}
@@ -42,6 +46,7 @@ const ChatList: React.FC<ChatListProps> = ({ chats }) => {
 export default ChatList;
 
 // Styled components for ChatList
-const ChatsContainer = styled("div")`
-  padding: 10px;
-`;
+const ChatsContainer = styled("div")(({ theme }) => ({
+  padding: theme.spacing(1.25),
+  maxWidth: "100%",
+}));

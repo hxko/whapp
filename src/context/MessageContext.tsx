@@ -8,7 +8,16 @@ import React, {
   useCallback,
   ReactNode,
 } from "react";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "../../firebase";
 import { Messagetype } from "types/types";
 import { decryptMessage } from "@utils/utils";
@@ -19,6 +28,17 @@ interface MessagesContextType {
   unsubscribeFromChatMessages: (chatId: string) => void;
   getMessages: (chatId: string) => Messagetype[] | undefined;
   getLastMessage: (chatId: string) => Messagetype | undefined;
+  getUnreadCount: (
+    chatId: string,
+    userEmail: string,
+    lastReadTimestamps: Record<string, Record<string, Timestamp>>
+  ) => number;
+  markChatAsRead: (
+    chatId: string,
+    userEmail: string,
+    timestamp: Timestamp
+  ) => Promise<void>;
+  lastReadTimestamps: Record<string, Record<string, Timestamp>>;
 }
 
 const MessagesCtx = createContext<MessagesContextType | undefined>(undefined);
@@ -39,9 +59,14 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
   const [messagesByChat, setMessagesByChat] = useState<
     Record<string, Messagetype[]>
   >({});
+
+  const [lastReadTimestamps, setLastReadTimestamps] = useState<
+    Record<string, Record<string, Timestamp>>
+  >({});
+
   const listeners = React.useRef<Record<string, () => void>>({});
 
-  const subscribeToChatMessages = useCallback((chatId: string) => {
+  const subscribeToChatMessages = useCallback(async (chatId: string) => {
     if (listeners.current[chatId]) return;
 
     const messagesRef = collection(db, `chats/${chatId}/messages`);
@@ -49,19 +74,24 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const messages: Messagetype[] = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
+        const data = doc.data() as Messagetype;
+        const decryptedText = decryptMessage(data.text);
         return {
+          ...data,
           id: doc.id,
-          sender: data.sender,
-          text: decryptMessage(data.text),
+          text: decryptedText,
           timestamp: data.timestamp,
-          replyTo: data.replyTo || null,
-          reactions: data.reactions || {},
         };
       });
 
-      setMessagesByChat((prev) => ({ ...prev, [chatId]: messages }));
+      setMessagesByChat((prev) => ({
+        ...prev,
+        [chatId]: messages,
+      }));
     });
+
+    const lastReadForChat = await fetchLastReadTimestamps(chatId);
+    setLastReadTimestamps((prev) => ({ ...prev, [chatId]: lastReadForChat }));
 
     listeners.current[chatId] = unsubscribe;
   }, []);
@@ -93,6 +123,51 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
     [messagesByChat]
   );
 
+  const fetchLastReadTimestamps = async (chatId: string) => {
+    const chatDoc = await getDoc(doc(db, "chats", chatId));
+    if (chatDoc.exists()) {
+      return chatDoc.data().lastRead || {};
+    }
+    return {};
+  };
+
+  const markChatAsRead = async (
+    chatId: string,
+    userEmail: string,
+    timestamp: Timestamp
+  ) => {
+    const chatRef = doc(db, "chats", chatId);
+
+    // Update Firestore
+    await updateDoc(chatRef, {
+      [`lastRead.${userEmail}`]: timestamp,
+    });
+
+    // Update local state
+    setLastReadTimestamps((prev) => ({
+      ...prev,
+      [chatId]: {
+        ...(prev[chatId] || {}),
+        [userEmail]: timestamp,
+      },
+    }));
+  };
+
+  const getUnreadCount = useCallback(
+    (chatId: string, userEmail: string): number => {
+      const messages = messagesByChat[chatId];
+      const lastRead = lastReadTimestamps[chatId]?.[userEmail]; // Use local state
+
+      if (!messages || messages.length === 0) return 0;
+      if (!lastRead) return messages.length;
+
+      return messages.filter(
+        (msg) => msg.timestamp?.toMillis() > lastRead.toMillis()
+      ).length;
+    },
+    [messagesByChat, lastReadTimestamps] // Add lastReadTimestamps as dependency
+  );
+
   useEffect(() => {
     return () => {
       // Cleanup all listeners on unmount
@@ -109,6 +184,9 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
         unsubscribeFromChatMessages,
         getMessages,
         getLastMessage,
+        getUnreadCount,
+        markChatAsRead,
+        lastReadTimestamps,
       }}
     >
       {children}

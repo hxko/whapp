@@ -1,3 +1,4 @@
+// TODO: route not needed anymore
 // src/app/chat/[chatId]/page.tsx
 "use client";
 
@@ -39,7 +40,6 @@ const Container = styled("div")(({ theme }) => ({
 const SidebarContainer = styled("div")(({ theme }) => ({
   width: 400, // Default width for larger screens
   borderRight: `1px solid ${theme.palette.divider}`, // Use theme divider color
-
   // Hide sidebar on small screens
   [theme.breakpoints.down("md")]: {
     display: "none",
