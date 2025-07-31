@@ -2,7 +2,7 @@ import DoneIcon from "@mui/icons-material/Done";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { Box } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
-import { Messagetype } from "@/types/types";
+import { Messagetype } from "@/types";
 
 const Checkmarks = ({
   message,

@@ -19,3 +19,15 @@ export type Messagetype = {
   readBy?: string[]; // list of users who read the message
   deliveredTo?: string[]; // track delivery status
 };
+
+export type MarkAsReadFunction = (
+  chatId: string,
+  messageId: string,
+  userEmail: string
+) => void;
+
+export type MarkAsDeliveredFunction = (
+  chatId: string,
+  messageId: string,
+  userEmail: string
+) => void;

@@ -12,7 +12,7 @@ import {
 import { db } from "../../firebase";
 
 import EmailValidator from "email-validator";
-import type { Chat } from "../types/types";
+import type { Chat } from "@/types";
 import type { User } from "firebase/auth";
 
 // Fetch a specific chat document by ID

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { styled } from "@mui/material/styles";
-import { Messagetype } from "@/types/types";
+import { Messagetype } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useMessages } from "@context/MessageContext";
 import MessageTimestamp from "./MessageTimestamp";

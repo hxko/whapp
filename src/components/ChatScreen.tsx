@@ -46,7 +46,7 @@ import { useChatPartner } from "@/hooks/useChatPartner";
 import { useMessages } from "@/context/MessageContext";
 
 // Types
-import { Messagetype } from "types/types";
+import { Messagetype } from "@/types";
 
 // Define the type for URL parameters
 export type Params = {
@@ -555,61 +555,64 @@ function ChatScreen() {
                     userEmail={currentUserEmail}
                     key={msg.id}
                     chatId={chatId}
-                    className={
-                      isCurrentUser(msg) ? "current-user" : "other-user"
-                    }
                   >
-                    {/* Message content - either URL preview or regular message */}
-                    {isUrl && chatId ? (
-                      <UrlPreviewComponent
-                        url={msg.text}
-                        timestamp={msg.timestamp}
-                        chatId={chatId}
-                        messageId={msg.id}
-                        onReply={handleReply}
-                      />
-                    ) : (
-                      <Message
-                        message={msg}
-                        chatId={chatId}
-                        onReply={handleReply}
-                      />
-                    )}
-
-                    {/* ===== EMOJI REACTION BUTTON ===== */}
-                    <IconButton
-                      size="small"
-                      className="emoji-hover-button"
-                      onClick={() =>
-                        setActiveEmojiPickerId(
-                          activeEmojiPickerId === msg.id ? null : msg.id
-                        )
+                    <MessageContainer
+                      className={
+                        isCurrentUser(msg) ? "current-user" : "other-user"
                       }
-                      sx={{
-                        backgroundColor: theme.palette.background.paper,
-                        boxShadow: 1,
-                        "&:hover": {
-                          backgroundColor: theme.palette.action.hover,
-                        },
-                      }}
                     >
-                      <EmojiEmotionsIcon fontSize="small" />
-                    </IconButton>
-
-                    {/* ===== QUICK EMOJI PICKER DROPDOWN ===== */}
-                    {activeEmojiPickerId === msg.id && (
-                      <QuickEmojiPickerContainer
-                        ref={quickEmojiPickerRef}
-                        isCurrentUser={isCurrentUser(msg)}
-                      >
-                        <QuickEmojiPicker
-                          onSelect={(emoji) =>
-                            handleSelectReaction(msg.id, emoji)
-                          }
-                          onClose={() => setActiveEmojiPickerId(null)}
+                      {/* Message content - either URL preview or regular message */}
+                      {isUrl && chatId ? (
+                        <UrlPreviewComponent
+                          url={msg.text}
+                          timestamp={msg.timestamp}
+                          chatId={chatId}
+                          messageId={msg.id}
+                          onReply={handleReply}
                         />
-                      </QuickEmojiPickerContainer>
-                    )}
+                      ) : (
+                        <Message
+                          message={msg}
+                          chatId={chatId}
+                          onReply={handleReply}
+                        />
+                      )}
+
+                      {/* ===== EMOJI REACTION BUTTON ===== */}
+                      <IconButton
+                        size="small"
+                        className="emoji-hover-button"
+                        onClick={() =>
+                          setActiveEmojiPickerId(
+                            activeEmojiPickerId === msg.id ? null : msg.id
+                          )
+                        }
+                        sx={{
+                          backgroundColor: theme.palette.background.paper,
+                          boxShadow: 1,
+                          "&:hover": {
+                            backgroundColor: theme.palette.action.hover,
+                          },
+                        }}
+                      >
+                        <EmojiEmotionsIcon fontSize="small" />
+                      </IconButton>
+
+                      {/* ===== QUICK EMOJI PICKER DROPDOWN ===== */}
+                      {activeEmojiPickerId === msg.id && (
+                        <QuickEmojiPickerContainer
+                          ref={quickEmojiPickerRef}
+                          isCurrentUser={isCurrentUser(msg)}
+                        >
+                          <QuickEmojiPicker
+                            onSelect={(emoji) =>
+                              handleSelectReaction(msg.id, emoji)
+                            }
+                            onClose={() => setActiveEmojiPickerId(null)}
+                          />
+                        </QuickEmojiPickerContainer>
+                      )}
+                    </MessageContainer>
                   </MessageObserver>
                   {/* ===== MESSAGE REACTIONS DISPLAY ===== */}
                   {msg.reactions &&
@@ -642,6 +645,7 @@ function ChatScreen() {
                     )}
 
                   {/* ===== REPLY MESSAGES ===== */}
+
                   {replies.map((reply) => {
                     const originalMessage = messages.find(
                       (m) => m.id === reply.replyTo
@@ -651,12 +655,20 @@ function ChatScreen() {
                       : false;
 
                     return (
-                      <ReplyMessage
-                        key={reply.id}
+                      <MessageObserver
                         message={reply}
-                        renderBody={renderMessageBody}
-                        isOriginalSender={isOriginalSender}
-                      />
+                        markAsRead={markMessageAsRead}
+                        markAsDelivered={markMessageAsDelivered}
+                        userEmail={currentUserEmail}
+                        key={reply.id}
+                        chatId={chatId}
+                      >
+                        <ReplyMessage
+                          message={reply}
+                          renderBody={renderMessageBody}
+                          isOriginalSender={isOriginalSender}
+                        />
+                      </MessageObserver>
                     );
                   })}
                 </React.Fragment>
@@ -773,6 +785,56 @@ const MessageList = styled(Box)(({ theme }) => ({
     display: "none",
   },
   scrollbarWidth: "none",
+}));
+
+const MessageContainer = styled(Box)(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  marginBottom: theme.spacing(1),
+  marginTop: theme.spacing(1),
+  maxWidth: "90%",
+  [theme.breakpoints.up("lg")]: {
+    maxWidth: "70%",
+  },
+  position: "relative",
+
+  // Emoji button hover effects
+  "& .emoji-hover-button": {
+    opacity: 0,
+    visibility: "hidden",
+    transition: "opacity 0.2s ease, visibility 0.2s ease",
+  },
+
+  "&:hover .emoji-hover-button": {
+    opacity: 1,
+    visibility: "visible",
+  },
+
+  // Positioning for current user messages (right-aligned)
+  "&.current-user": {
+    alignSelf: "flex-end",
+
+    "& .emoji-hover-button": {
+      position: "absolute",
+      top: "50%",
+      left: "-35px",
+      transform: "translateY(-50%)",
+      zIndex: 1,
+    },
+  },
+
+  // Positioning for other user messages (left-aligned)
+  "&.other-user": {
+    alignSelf: "flex-start",
+
+    "& .emoji-hover-button": {
+      position: "absolute",
+      top: "50%",
+      right: "-35px",
+      transform: "translateY(-50%)",
+      zIndex: 1,
+    },
+  },
 }));
 
 /**

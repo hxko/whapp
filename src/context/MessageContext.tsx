@@ -29,7 +29,7 @@ import { db } from "../../firebase"; // adjust path as needed
 
 import CryptoJS from "crypto-js";
 
-import { Messagetype } from "../types/types"; // adjust path as needed
+import { Messagetype } from "@/types"; // adjust path as needed
 
 // Your encryption key (ensure this env var is set)
 const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTOKEY as string;
