@@ -20,14 +20,14 @@ const Checkmarks = ({
     Array.isArray(message.deliveredTo) && message.deliveredTo.length > 0;
 
   const color = hasRead ? blue[400] : hasDelivered ? grey[600] : grey[400];
-  console.log(
-    "sender",
-    message.sender,
-    "user",
-    currentUserEmail,
-    "isSender",
-    isSender
-  );
+  // console.log(
+  //   "sender",
+  //   message.sender,
+  //   "user",
+  //   currentUserEmail,
+  //   "isSender",
+  //   isSender
+  // );
   return (
     <Box
       sx={{

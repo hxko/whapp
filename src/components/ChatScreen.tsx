@@ -545,6 +545,15 @@ function ChatScreen() {
               const replies = messages.filter((m) => m.replyTo === msg.id);
               const isUrl = isValidUrl(msg.text);
 
+              // Determine the latest message in the chat
+              // Ensure messages are sorted by timestamp (which they should be from Firestore query)
+              const latestMessage =
+                messages.length > 0 ? messages[messages.length - 1] : null;
+
+              if (!user) {
+                return <div>Please log in to view messages.</div>; // Handle unauthenticated state
+              }
+
               return (
                 <React.Fragment key={msg.id}>
                   {/* ===== MAIN MESSAGE CONTAINER ===== */}
@@ -555,6 +564,10 @@ function ChatScreen() {
                     userEmail={currentUserEmail}
                     key={msg.id}
                     chatId={chatId}
+                    // Pass true only if this message is the absolute last one in the array
+                    isLatestMessageInChat={
+                      latestMessage ? msg.id === latestMessage.id : false
+                    }
                   >
                     <MessageContainer
                       className={
@@ -662,6 +675,10 @@ function ChatScreen() {
                         userEmail={currentUserEmail}
                         key={reply.id}
                         chatId={chatId}
+                        // Pass true only if this message is the absolute last one in the array
+                        isLatestMessageInChat={
+                          latestMessage ? msg.id === latestMessage.id : false
+                        }
                       >
                         <ReplyMessage
                           message={reply}

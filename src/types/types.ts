@@ -18,6 +18,7 @@ export type Messagetype = {
   };
   readBy?: string[]; // list of users who read the message
   deliveredTo?: string[]; // track delivery status
+  updatedAt?: Timestamp; // update when reactions are added
 };
 
 export type MarkAsReadFunction = (
