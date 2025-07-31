@@ -142,7 +142,7 @@ const Login: React.FC = () => {
     <Root>
       <LoginCard elevation={3}>
         <Header>
-          <Logo src="../../../225464805.png" alt="Application Logo" />
+          <Logo src="../../../Chatlink-Logo.png" alt="Application Logo" />
         </Header>
 
         <Content>

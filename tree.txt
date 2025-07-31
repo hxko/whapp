@@ -1,0 +1,89 @@
+.
+├── eslint.config.mjs
+├── firebase
+│   └── auth
+│       └── signInWithProvider.ts
+├── firebase.js
+├── next.config.js
+├── next-env.d.ts
+├── package.json
+├── package-lock.json
+├── postcss.config.mjs
+├── public
+│   ├── 225464805.png
+│   ├── apple-touch-icon.png
+│   ├── favicon-96x96.png
+│   ├── favicon.ico
+│   ├── favicon.svg
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── site.webmanifest
+│   ├── vercel.svg
+│   ├── web-app-manifest-192x192.png
+│   ├── web-app-manifest-512x512.png
+│   └── window.svg
+├── README.md
+├── src
+│   ├── app
+│   │   ├── api
+│   │   │   ├── avatarProxy
+│   │   │   │   └── route.js
+│   │   │   ├── hello
+│   │   │   │   └── route.ts
+│   │   │   ├── image-proxy
+│   │   │   │   └── route.ts
+│   │   │   └── proxy
+│   │   │       └── route.ts
+│   │   ├── dashboard
+│   │   │   └── page.tsx
+│   │   ├── global.css
+│   │   ├── head.tsx
+│   │   ├── layout.tsx
+│   │   ├── login
+│   │   │   └── page.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── AccountLinkingDialog.tsx
+│   │   ├── AuthProvider.tsx
+│   │   ├── ChatItem.tsx
+│   │   ├── ChatList.tsx
+│   │   ├── ChatScreen.tsx
+│   │   ├── Checkmarks.tsx
+│   │   ├── DropdownIcon.tsx
+│   │   ├── Footer.tsx
+│   │   ├── Loading.tsx
+│   │   ├── Login.tsx
+│   │   ├── MessageObserver.tsx
+│   │   ├── MessageTimestamp.tsx
+│   │   ├── Message.tsx
+│   │   ├── QuickEmojiPicker.tsx
+│   │   ├── ReplyMessage.tsx
+│   │   ├── ReplyPreview.tsx
+│   │   ├── SearchBar.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── ThemeContext.tsx
+│   │   ├── ThemeProvider.tsx
+│   │   ├── ThemeToggleButton.tsx
+│   │   ├── UrlPreviewComponent.tsx
+│   │   ├── UserAvatar.tsx
+│   │   └── UserDashboard.tsx
+│   ├── context
+│   │   └── MessageContext.tsx
+│   ├── hooks
+│   │   ├── index.js
+│   │   ├── useAccountLinking.tsx
+│   │   ├── useChatPartner.tsx
+│   │   ├── useChats.ts
+│   │   └── useLinkedProvider.tsx
+│   ├── types
+│   │   ├── index.ts
+│   │   └── types.ts
+│   └── utils
+│       ├── deleteUserAccount.tsx
+│       └── utils.ts
+├── structure.txt
+├── tree.txt
+└── tsconfig.json
+
+18 directories, 69 files
